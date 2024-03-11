@@ -1,10 +1,20 @@
 # import modules
 import numpy as np
+import os
 import sys
 import matplotlib.pyplot as plt
 from astropy import constants, units
 from dataclasses import dataclass
 from scipy.signal import convolve
+
+current_path = os.getcwd()
+print(current_path)
+# Check if it is office computer or laptop and set path of imfits accordingly
+if current_path.split(sep=':')[0] == 'D':                           # Office computer
+    print("In office")
+    sys.path.append("D:\L1489_IRS_ssp\imfits")
+else:                                                               # Laptop N
+    sys.path.append("E:/Mihir_new/ASIAA-SSP/imfits/")
 
 from imfits import Imfits
 from imfits.drawmaps import AstroCanvas
@@ -155,8 +165,8 @@ def Bv_Jybeam(T,v,bmaj,bmin):
 @dataclass(slots=True)
 class SSDisk:
 
-    Ic: float = 1.
-    rc: float = 1.
+    Ic: float = 1.              #  Central Intensity
+    rc: float = 1.              #  Outer radius of disk model in AU
     beta: float = 0.
     gamma: float = 0.
     inc: float = 0.
@@ -258,7 +268,7 @@ class SSDisk:
 def main():
     # --------- input ---------
     # model params
-    Ic, rc, beta, gamma = [1., 600., 1.5, 1.]
+    Ic, rc, beta, gamma = [1., 600., 1.5, 1.] # rc 
     inc = 70.
     pa = 69.
     ms = 1.6
@@ -273,7 +283,7 @@ def main():
     # --------- main ----------
     # read fits file
     cube = Imfits(f)
-    cube.trim_data([-5., 5.,], [-5.,5.], [4.4, 10.4])
+    cube.trim_data([-5., 5.,], [-5.,5.], [4.4, 10.4])   # trim_data([RA range in arcsec offset from center], [Dec range], [offset velocity range in kmps])
     xx = cube.xx * 3600. * dist # in au
     yy = cube.yy * 3600. * dist # in au
     v = cube.vaxis # km/s
