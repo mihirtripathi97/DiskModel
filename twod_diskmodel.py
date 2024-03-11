@@ -299,7 +299,7 @@ def main():
     canvas = AstroCanvas((4,7),(0,0), imagegrid=True)
     canvas.channelmaps(cube, contour=True, color=False,
         clevels = np.array([-3,3.,6.,9.,12.,15])*5e-3)
-    for i, im in enumerate(modelcube):
+    for i, im in enumerate(modelcube):      #   Plotting model as image as raster
         if i < len(canvas.axes):
             ax = canvas.axes[i]
             ax.pcolor(xx / dist, yy / dist, im, shading='auto', rasterized=True,
