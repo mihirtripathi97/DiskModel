@@ -104,6 +104,15 @@ def rotate2d(x, y, angle):
 
 
 def vkep(r, ms, z = 0.):
+    '''
+    Returns kepler velocity at a given point in a protoplanetary disk. Assumes mass of the cental star (M_star) 
+    is much greater then disk mass, and hence only M_star determines the kepler velocity.
+
+    Parameters:
+    r       : `float`, radial distance of the point wrt the star
+    M_star  : `float`, Mass of the star
+    z       : `float`, vertical height of point from disk midplane
+    '''
     return np.sqrt(Ggrav * ms * r * r / (r*r + z*z)**(1.5))
 
 
@@ -222,9 +231,23 @@ class SSDisk:
         th = np.arctan2(yp, xp) # azimuthal angle (rad)
 
         # take y-axis as the line of sight
-        vlos = vkep(r * auTOcm, self.ms * Msun) \
-        * np.cos(th) * np.sin(_inc_rad) * 1.e-5 + self.vsys # cm/s --> km/s
+        vlos = vkep(r * auTOcm, self.ms * Msun)*np.cos(th) * np.sin(_inc_rad) * 1.e-5 + self.vsys # cm/s --> km/s
         I_int = ssdisk(r, self.Ic, self.rc, self.gamma, self.beta)
+
+        plot_intensity_radii = True
+
+        if plot_intensity_radii:
+
+            fig, axes = plt.subplots()
+
+            axes.plot(r, I_int, marker = 'o')
+
+            print("plotting intensity")
+            axes.set_xscale("log")
+
+            plt.show()
+            plt.close()
+
 
         return I_int.reshape(xx_sky.shape), vlos.reshape(xx_sky.shape)
 
@@ -232,6 +255,9 @@ class SSDisk:
     def build_cube(self, xx, yy, v, beam = None, linewidth = 0., dist = 140.):
         # get intensity and velocity fields
         I_int, vlos = self.build(xx, yy)
+
+        print("Printing intensity ")
+        print(np.shape(I_int))
         
         # vaxes
         ny, nx = xx.shape
@@ -284,17 +310,28 @@ def main():
     # read fits file
     cube = Imfits(f)
     cube.trim_data([-5., 5.,], [-5.,5.], [4.4, 10.4])   # trim_data([RA range in arcsec offset from center], [Dec range], [offset velocity range in kmps])
+
+    print(cube.xx)
     xx = cube.xx * 3600. * dist # in au
+
+    print("shape of X", np.shape(xx))
     yy = cube.yy * 3600. * dist # in au
     v = cube.vaxis # km/s
 
 
     # model
     model = SSDisk(Ic, rc, beta, gamma, inc, pa, ms, vsys)
+    print(model)
     modelcube = model.build_cube(xx, yy, v, cube.beam, 0.5, dist)
     vmin, vmax = np.nanmin(modelcube)*0.5, np.nanmax(modelcube)*0.5
 
+    print(np.shape(modelcube))
 
+
+if __name__ == '__main__':
+    main()
+
+'''
     # plot
     canvas = AstroCanvas((4,7),(0,0), imagegrid=True)
     canvas.channelmaps(cube, contour=True, color=False,
@@ -311,6 +348,4 @@ def main():
     # -------------------------
 
 
-
-if __name__ == '__main__':
-    main()
+'''
