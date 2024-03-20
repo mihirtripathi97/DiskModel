@@ -51,6 +51,10 @@ def ssdisk(r, Ic, rc, gamma, beta = None):
     beta_p = gamma if beta is None else beta # - beta = - gamma - q
     return Ic * (r/rc)**(- beta_p) * np.exp(-(r/rc)**(2. - gamma))
 
+def ssdisk_gaussian_ring(r, Ic, rc, gamma, r_ring, beta = None):
+    beta_p = gamma if beta is None else beta # - beta = - gamma - q
+    return Ic * (r/rc)**(- beta_p) * np.exp(-(r/rc)**(2. - gamma)) + np.exp((r-r_ring/10)**2)
+
 def gaussian_profile(r, I0, sigr):
     return I0*np.exp(-r**2./(2.*sigr**2))
 
@@ -115,7 +119,6 @@ def vkep(r, ms, z = 0.):
     '''
     return np.sqrt(Ggrav * ms * r * r / (r*r + z*z)**(1.5))
 
-
 # Planck function
 def Bv(T,v):
     '''
@@ -170,8 +173,7 @@ def Bv_Jybeam(T,v,bmaj,bmin):
     return Bv
 
 
-
-@dataclass(slots=True)
+@dataclass()
 class SSDisk:
 
     Ic: float = 1.              #  Central Intensity
@@ -258,6 +260,7 @@ class SSDisk:
         ny, nx = xx.shape
         nv = len(v)
         delv = np.mean(v[1:] - v[:-1])
+        print("Delv = ", delv)
         ve = np.hstack([v - delv * 0.5, v[-1] + 0.5 * delv])
         I_cube = np.zeros((nv, ny, nx))
 
@@ -291,9 +294,9 @@ def main():
     # model params
     Ic, rc, beta, gamma = [1., 600., 1.5, 1.] # rc 
     inc = 70.
-    pa = 0.
+    pa = 69.
     ms = 1.6
-    vsys = 7.4
+    vsys = 7.3
 
     # object
     f_cube = 'uid___A002_b_6.cal.l1489_irs.spw_1_7.line.cube.clean.c_baseline_0.image.pbcor.Regridded.Smoothened.fits'
@@ -304,12 +307,13 @@ def main():
     # --------- main ----------
     # read fits file
     cube = Imfits(f_cube)
-    cube.trim_data([-5., 5.,], [-5.,5.], [4.4, 10.4])   # trim_data([RA range in arcsec offset from center], [Dec range], [offset velocity range in kmps])
+    cube.trim_data([-8., 8.,], [-8.,8.], [4.0, 12.0])   # trim_data([RA range in arcsec offset from center], [Dec range], [offset velocity range in kmps])
 
     xx = cube.xx * 3600. * dist # in au
     yy = cube.yy * 3600. * dist # in au
     v = cube.vaxis # km/s
 
+    print(np.shape(v))
 
     # model
     model = SSDisk(Ic, rc, beta, gamma, inc, pa, ms, vsys)
@@ -320,19 +324,23 @@ def main():
     # Let's get PV plot out of the modelcube  
     pv_model = np.squeeze(modelcube[:, :, 0])
 
+    print("Shape of pv model",np.shape(pv_model))
 
     # plot modelcube on top of observed cube (as contours)
 
-    plot_cube = False
+    plot_cube = True
 
     if plot_cube:
         canvas = AstroCanvas((4,7),(0,0), imagegrid=True)
         canvas.channelmaps(cube, contour=True, color=False,
-            clevels = np.array([-3,3.,6.,9.,12.,15])*5e-3)
+                           coord_center='04h04m43.07s 26d18m56.30s',
+                           #nskip=2,
+                           #imscale = [-8, 8, -8, 8],
+            clevels = np.array([-3, 3.,6.,9.,12.,15])*7e-3)
         for i, im in enumerate(modelcube):      #   Plotting model as image as raster
             if i < len(canvas.axes):
                 ax = canvas.axes[i]
-                ax.pcolor(xx / dist, yy / dist, im, shading='auto', rasterized=True,
+                ax.pcolormesh(xx / dist, yy / dist, im, shading='auto', rasterized=True,
                     vmin = vmin, vmax = vmax, cmap='PuBuGn')
             else:
                 break
@@ -358,42 +366,20 @@ def main():
                     #ylim = [-8.5,6.5],
                     clevels = np.array([3,7,10,15,25,35,45])*rms_pv,
                     x_offset = True, # If true, offset (radial distance from star) will be the x axis
-                    vsys = 7.3, # systemic velocity
+                    vsys = 7.3, # systemic velocity in kmps
                     ln_var = True, # plot vertical center (systemic velocity)
                     ln_hor = True, # plot horizontal center (zero offset)
                     #cbaroptions = ('right', '3%', '3%'),
                     #cbarlabel = r'(Jy beam$^{-1})$',
                     colorbar = False 
                     )
-        print(xx[0,:]/dist)
-        for i, im in enumerate(pv_model):
 
-            
-            # print("shape of im :", np.shape([im]))
-            ax = canvas.axes[0]
-
-            #print(np.shape(xx[:,0]/dist), print(np.shape([v[i]])))
-            X, Y = np.meshgrid(xx[0,:]/dist, v[i]-7.3)
-            ax.pcolormesh(X,Y, im.reshape(1, -1), shading='auto', rasterized=True,
-                    vmin = vmin, vmax = vmax, cmap='PuBuGn')
+        X, Y = np.meshgrid(xx[0,:]/dist, v-7.4)
+        ax = canvas.axes[0]
+        ax.pcolormesh(X,Y, pv_model, shading='auto', rasterized=True,
+                     cmap='PuBuGn')
         plt.show()
-
-
-
-
-
 
 
 if __name__ == '__main__':
     main()
-
-
-
-
-'''
-    # plot
-
-    # -------------------------
-
-
-'''
