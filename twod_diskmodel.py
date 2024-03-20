@@ -211,7 +211,6 @@ class SSDisk:
     def get_paramkeys(self):
         return list(self.__annotations__.keys())
 
-
     def build(self, xx_sky, yy_sky):
         '''
         Build a model given sky coordinates and return a info for making a image cube.
@@ -234,7 +233,7 @@ class SSDisk:
         vlos = vkep(r * auTOcm, self.ms * Msun)*np.cos(th) * np.sin(_inc_rad) * 1.e-5 + self.vsys # cm/s --> km/s
         I_int = ssdisk(r, self.Ic, self.rc, self.gamma, self.beta)
 
-        plot_intensity_radii = True
+        plot_intensity_radii = False
 
         if plot_intensity_radii:
 
@@ -248,16 +247,12 @@ class SSDisk:
             plt.show()
             plt.close()
 
-
         return I_int.reshape(xx_sky.shape), vlos.reshape(xx_sky.shape)
 
 
     def build_cube(self, xx, yy, v, beam = None, linewidth = 0., dist = 140.):
         # get intensity and velocity fields
         I_int, vlos = self.build(xx, yy)
-
-        print("Printing intensity ")
-        print(np.shape(I_int))
         
         # vaxes
         ny, nx = xx.shape
@@ -296,25 +291,22 @@ def main():
     # model params
     Ic, rc, beta, gamma = [1., 600., 1.5, 1.] # rc 
     inc = 70.
-    pa = 69.
+    pa = 0.
     ms = 1.6
     vsys = 7.4
 
     # object
-    f = 'l1489.c18o.contsub.gain01.rbp05.mlt100.cf15.pbcor.croped.fits'
+    f_cube = 'uid___A002_b_6.cal.l1489_irs.spw_1_7.line.cube.clean.c_baseline_0.image.pbcor.Regridded.Smoothened.fits'
     dist = 140.
     # -------------------------
-
+    f_PV = 'uid___A002_b_6.cal.l1489_irs.spw_1_7.line.cube.clean.c_baseline_0.image.pbcor.Regridded.Smoothened.PV_69_w1.fits'
 
     # --------- main ----------
     # read fits file
-    cube = Imfits(f)
+    cube = Imfits(f_cube)
     cube.trim_data([-5., 5.,], [-5.,5.], [4.4, 10.4])   # trim_data([RA range in arcsec offset from center], [Dec range], [offset velocity range in kmps])
 
-    print(cube.xx)
     xx = cube.xx * 3600. * dist # in au
-
-    print("shape of X", np.shape(xx))
     yy = cube.yy * 3600. * dist # in au
     v = cube.vaxis # km/s
 
@@ -325,26 +317,82 @@ def main():
     modelcube = model.build_cube(xx, yy, v, cube.beam, 0.5, dist)
     vmin, vmax = np.nanmin(modelcube)*0.5, np.nanmax(modelcube)*0.5
 
-    print(np.shape(modelcube))
+    # Let's get PV plot out of the modelcube  
+    pv_model = np.squeeze(modelcube[:, :, 0])
+
+
+    # plot modelcube on top of observed cube (as contours)
+
+    plot_cube = False
+
+    if plot_cube:
+        canvas = AstroCanvas((4,7),(0,0), imagegrid=True)
+        canvas.channelmaps(cube, contour=True, color=False,
+            clevels = np.array([-3,3.,6.,9.,12.,15])*5e-3)
+        for i, im in enumerate(modelcube):      #   Plotting model as image as raster
+            if i < len(canvas.axes):
+                ax = canvas.axes[i]
+                ax.pcolor(xx / dist, yy / dist, im, shading='auto', rasterized=True,
+                    vmin = vmin, vmax = vmax, cmap='PuBuGn')
+            else:
+                break
+        plt.show()
+
+    plot_PV = True
+    if plot_PV:
+
+        pv_obs = Imfits(f_PV, pv=True)
+
+        print("Shape of observed pv", np.shape(pv_obs.data))
+        rms_pv = pv_obs.estimate_noise()
+
+        canvas = AstroCanvas((1,1))
+        pv_plot = canvas.pvdiagram(pv_obs,
+                    vrel = True,
+                    color = False,
+                    #cmap = 'inferno',
+                    vmin = -2.0,
+                    vmax = 14.0,
+                    contour = True,
+                    clip = 0.0000000,
+                    #ylim = [-8.5,6.5],
+                    clevels = np.array([3,7,10,15,25,35,45])*rms_pv,
+                    x_offset = True, # If true, offset (radial distance from star) will be the x axis
+                    vsys = 7.3, # systemic velocity
+                    ln_var = True, # plot vertical center (systemic velocity)
+                    ln_hor = True, # plot horizontal center (zero offset)
+                    #cbaroptions = ('right', '3%', '3%'),
+                    #cbarlabel = r'(Jy beam$^{-1})$',
+                    colorbar = False 
+                    )
+        print(xx[0,:]/dist)
+        for i, im in enumerate(pv_model):
+
+            
+            # print("shape of im :", np.shape([im]))
+            ax = canvas.axes[0]
+
+            #print(np.shape(xx[:,0]/dist), print(np.shape([v[i]])))
+            X, Y = np.meshgrid(xx[0,:]/dist, v[i]-7.3)
+            ax.pcolormesh(X,Y, im.reshape(1, -1), shading='auto', rasterized=True,
+                    vmin = vmin, vmax = vmax, cmap='PuBuGn')
+        plt.show()
+
+
+
+
+
 
 
 if __name__ == '__main__':
     main()
 
+
+
+
 '''
     # plot
-    canvas = AstroCanvas((4,7),(0,0), imagegrid=True)
-    canvas.channelmaps(cube, contour=True, color=False,
-        clevels = np.array([-3,3.,6.,9.,12.,15])*5e-3)
-    for i, im in enumerate(modelcube):      #   Plotting model as image as raster
-        if i < len(canvas.axes):
-            ax = canvas.axes[i]
-            ax.pcolor(xx / dist, yy / dist, im, shading='auto', rasterized=True,
-                vmin = vmin, vmax = vmax, cmap='PuBuGn')
-        else:
-            break
 
-    plt.show()
     # -------------------------
 
 
