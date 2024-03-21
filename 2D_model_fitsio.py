@@ -351,7 +351,7 @@ def main():
                 break
         plt.show()
 
-    plot_PV = True
+    plot_PV = False
     if plot_PV:
 
         pv_obs = Imfits(f_PV, pv=True)
@@ -360,7 +360,7 @@ def main():
         rms_pv = pv_obs.estimate_noise()
 
         canvas = AstroCanvas((1,1))
-        # pv_plot = canvas.pvdiagram(pv_obs,
+        pv_plot = canvas.pvdiagram(pv_obs,
                     vrel = True,
                     color = False,
                     #cmap = 'inferno',
@@ -388,6 +388,14 @@ def main():
         plt.colorbar(a, ax=ax)
         plt.show()
 
+    print("At v = ", v[22] - 7.4)
+    print(pv_model[22,:])
+
+    plt.plot(xx[0,:]/dist, pv_model[22,:], label='center', color='green')
+    plt.plot(xx[0,:]/dist,pv_model[5,:], label = 'up', color = 'red' )
+    plt.plot(xx[0,:]/dist,pv_model[40,:], label = 'down', color = 'blue' )
+    plt.legend()
+    plt.show()
 
 if __name__ == '__main__':
     main()
