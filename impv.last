@@ -1,0 +1,17 @@
+imagename = 'L1489_irs_model_3.fits'
+outfile   = 'L1489_irs_model_3.pv_69'
+mode      = 'length'
+start     = ''
+end       = ''
+width     = 1
+unit      = 'arcsec'
+chans     = ''
+stokes    = ''
+mask      = ''
+center    = ['04h04m43.07s', '26d18m56.24']
+length    = '18arcsec'
+pa        = '69deg'
+overwrite = True
+region    = ''
+stretch   = False
+#impv( imagename='L1489_irs_model_3.fits',outfile='L1489_irs_model_3.pv_69',mode='length',start='',end='',width=1,unit='arcsec',chans='',stokes='',mask='',center=['04h04m43.07s', '26d18m56.24'],length='18arcsec',pa='69deg',overwrite=True,region='',stretch=False )

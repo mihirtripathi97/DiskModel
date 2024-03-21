@@ -294,7 +294,7 @@ def main():
     # model params
     Ic, rc, beta, gamma = [1., 600., 1.5, 1.] # rc 
     inc = 70.
-    pa = 69.
+    pa = 0.
     ms = 1.6
     vsys = 7.3
 
@@ -307,7 +307,7 @@ def main():
     # --------- main ----------
     # read fits file
     cube = Imfits(f_cube)
-    cube.trim_data([-8., 8.,], [-8.,8.], [4.0, 12.0])   # trim_data([RA range in arcsec offset from center], [Dec range], [offset velocity range in kmps])
+    cube.trim_data([-9., 9.,], [-9.,9.])   # trim_data([RA range in arcsec offset from center], [Dec range], [offset velocity range in kmps])
 
     xx = cube.xx * 3600. * dist # in au
     yy = cube.yy * 3600. * dist # in au
@@ -321,6 +321,9 @@ def main():
     modelcube = model.build_cube(xx, yy, v, cube.beam, 0.5, dist)
     vmin, vmax = np.nanmin(modelcube)*0.5, np.nanmax(modelcube)*0.5
 
+
+
+    
     # Let's get PV plot out of the modelcube  
     pv_model = np.squeeze(modelcube[:, :, 0])
 
@@ -328,7 +331,7 @@ def main():
 
     # plot modelcube on top of observed cube (as contours)
 
-    plot_cube = True
+    plot_cube = False
 
     if plot_cube:
         canvas = AstroCanvas((4,7),(0,0), imagegrid=True)
