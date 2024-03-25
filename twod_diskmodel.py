@@ -260,7 +260,6 @@ class SSDisk:
         ny, nx = xx.shape
         nv = len(v)
         delv = np.mean(v[1:] - v[:-1])
-        print("Delv = ", delv)
         ve = np.hstack([v - delv * 0.5, v[-1] + 0.5 * delv])
         I_cube = np.zeros((nv, ny, nx))
 
@@ -294,7 +293,7 @@ def main():
     # model params
     Ic, rc, beta, gamma = [1., 600., 1.5, 1.] # rc 
     inc = 70.
-    pa = 0.
+    pa = 69.
     ms = 1.6
     vsys = 7.3
 
@@ -331,7 +330,7 @@ def main():
 
     # plot modelcube on top of observed cube (as contours)
 
-    plot_cube = False
+    plot_cube = True
 
     if plot_cube:
         canvas = AstroCanvas((4,7),(0,0), imagegrid=True)
@@ -377,7 +376,7 @@ def main():
                     colorbar = False 
                     )
 
-        X, Y = np.meshgrid(xx[0,:]/dist, v-7.4)
+        X, Y = np.meshgrid(xx[0,:]/dist, -v+7.4)
         ax = canvas.axes[0]
         ax.pcolormesh(X,Y, pv_model, shading='auto', rasterized=True,
                      cmap='PuBuGn')
