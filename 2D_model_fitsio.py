@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from scipy.signal import convolve
 from spectral_cube import SpectralCube
 from astropy.io import fits
+import matplotlib.colors as colors
 
 current_path = os.getcwd()
 print(current_path)
@@ -53,13 +54,14 @@ def ssdisk(r, Ic, rc, gamma, beta = None):
     beta_p = gamma if beta is None else beta # - beta = - gamma - q
     return Ic * (r/rc)**(- beta_p) * np.exp(-(r/rc)**(2. - gamma))
 
-def ssdisk_gaussian_ring(r, Ic, rc, gamma, r_ring, beta = None):
+def ssdisk_gaussian_ring(r, Ic, rc, gamma, beta = None, ring_hight = None, ring_loc = 600, ring_width = 1):
+    if A == None:
+        A = 0.
     beta_p = gamma if beta is None else beta # - beta = - gamma - q
-    return Ic * (r/rc)**(- beta_p) * np.exp(-(r/rc)**(2. - gamma)) + np.exp((r-r_ring/10)**2)
+    return Ic * (r/rc)**(- beta_p) * np.exp(-(r/rc)**(2. - gamma)) + A*np.exp(-(r-r_ring/r_width)**2)
 
 def gaussian_profile(r, I0, sigr):
     return I0*np.exp(-r**2./(2.*sigr**2))
-
 # Gaussians
 # 1D
 def gaussian1d(x, amp, mx, sig):
@@ -88,7 +90,6 @@ def gaussian2d(x, y, A, mx, my, sigx, sigy, pa=0, peak=True):
     expy = np.exp(-(y-my)*(y-my)/(2.0*sigy*sigy))
     return (coeff*expx*expy).reshape(shape)
 
-
 # 2D rotation
 def rotate2d(x, y, angle):
     '''
@@ -107,7 +108,6 @@ def rotate2d(x, y, angle):
         )
 
     return rot @ np.array([x, y])
-
 
 def vkep(r, ms, z = 0.):
     '''
@@ -137,7 +137,6 @@ def Bv(T,v):
     Bv=fterm/exp
     #print(exp, T, v)
     return Bv
-
 
 # Jy/beam
 def Bv_Jybeam(T,v,bmaj,bmin):
@@ -174,7 +173,13 @@ def Bv_Jybeam(T,v,bmaj,bmin):
     Bv = Bv*bTOstr     # Jy/str --> Jy/beam
     return Bv
 
+def write_fits(path, ):
+    # Now let's convert model cube into a fits file using wcs axis of the tempelate
+    #print(repr(cube.header))
+    model_hdu = fits.PrimaryHDU(data=modelcube, header=cube.header)
+    model_hdu.writeto("L1489_irs_model_3.fits", overwrite=True)
 
+    return(0)
 @dataclass()
 class SSDisk:
 
@@ -214,7 +219,7 @@ class SSDisk:
     def get_paramkeys(self):
         return list(self.__annotations__.keys())
 
-    def build(self, xx_sky, yy_sky):
+    def build(self, xx_sky, yy_sky, intensity_function = None, **kwargs):
         '''
         Build a model given sky coordinates and return a info for making a image cube.
         '''
@@ -230,31 +235,46 @@ class SSDisk:
 
         # local coordinates
         r = np.sqrt(xp * xp + yp * yp) # radius
-        th = np.arctan2(yp, xp) # azimuthal angle (rad)
+        theta = np.arctan2(yp, xp) # azimuthal angle (rad)
 
         # take y-axis as the line of sight
-        vlos = vkep(r * auTOcm, self.ms * Msun)*np.cos(th) * np.sin(_inc_rad) * 1.e-5 + self.vsys # cm/s --> km/s
-        I_int = ssdisk(r, self.Ic, self.rc, self.gamma, self.beta)
+        vlos = vkep(r * auTOcm, self.ms * Msun)*np.cos(theta) * np.sin(_inc_rad) * 1.e-5 + self.vsys # cm/s --> km/s
+        
+        # Calculate intensity
+        if intensity_function == None:
+            I_int = ssdisk(r, self.Ic, self.rc, self.gamma, self.beta)
+
+        else:
+            I_int = intensity_function(r, theta, self.Ic, self.rc, **kwargs)
 
         plot_intensity_radii = False
 
-        if plot_intensity_radii:
 
-            fig, axes = plt.subplots()
-
-            axes.plot(r, I_int, marker = 'o')
-
-            print("plotting intensity")
-            axes.set_xscale("log")
-
-            plt.show()
-            plt.close()
 
         return I_int.reshape(xx_sky.shape), vlos.reshape(xx_sky.shape)
 
-    def build_cube(self, xx, yy, v, beam = None, linewidth = 0., dist = 140.):
+    def build_cube(self, xx, yy, v, beam = None, linewidth = 0., dist = 140., radial_profile = None, **rp_kwargs):
+
+        """
+        Builds an intensity cube given meshgrids of x,y and v axes. Convolves intesity with beam and line broadening.
+
+        Parameters:
+        xx              : `np.meshgrid` object for x coordinate
+        yy              : `np.meshgrid` object for y coordinate
+        v               : `np.ndarray` of v (velocity)
+        beam            : ``, convolving beam 
+        linewidth       : `float`, Line width
+        dist            : `float`, Distance of star in AU
+        radial_profile  : A function of `r` and `theta` giving intensity profile. The function must be of the form fun(r,theta,Ic,Rc,**kwargs)
+        **rp_kwargs     : `dict`, Dictionary specifying constants and their values as key, value pair required for radial_profile function
+
+        Returns:
+        I_cube          : `np.ndarray` of shape (len(v), len(y), len(x))
+        I_int           : `np.ndarray` of shape (len(x_sky), len(y_sky))
+
+        """
         # get intensity and velocity fields
-        I_int, vlos = self.build(xx, yy)
+        I_int, vlos = self.build(xx, yy, intensity_function = None, **rp_kwargs = None)
         
         # vaxes
         ny, nx = xx.shape
@@ -285,30 +305,32 @@ class SSDisk:
             gaussbeam = np.exp(-( (v - self.vsys) /(2. * linewidth / 2.35))**2.)
             I_cube = convolve(I_cube, np.array([[gaussbeam]]).T, mode='same')
 
-        return I_cube
-
+        return I_cube, I_int
 
 def main():
     # --------- input ---------
     # model params
     Ic, rc, beta, gamma = [1., 600., 1.5, 1.] # rc 
     inc = 73.
-    pa = 69.
+    pa = 0.
     ms = 1.6
     vsys = 7.3
-
-    # object
-    f_cube = 'uid___A002_b_6.cal.l1489_irs.spw_1_7.line.cube.clean.c_baseline_0.image.pbcor.Regridded.Smoothened.fits'
     dist = 140.
-    # -------------------------
+
+    # Observed disk cube
+    f_cube = 'uid___A002_b_6.cal.l1489_irs.spw_1_7.line.cube.clean.c_baseline_0.image.pbcor.Regridded.Smoothened.fits'
+    
+    # Observed disk PV
     f_PV = 'uid___A002_b_6.cal.l1489_irs.spw_1_7.line.cube.clean.c_baseline_0.image.pbcor.Regridded.Smoothened.PV_69_w1.fits'
 
     # --------- main ----------
     # read fits file
     cube = Imfits(f_cube)
+    # shift coordinate center (the mesh grid will now bw centerd on pixel at this location)
     cube.shift_coord_center(coord_center = '04h04m43.07s 26d18m56.30s')
     cube.trim_data([-9., 9.,], [-9.,9.], [2.7, 11.9])
     # cube.trim_data(vlim = [1.19,13.5])   # trim_data([RA range in arcsec offset from center], [Dec range], [offset velocity range in kmps])
+    
     xx = cube.xx * 3600. * dist # in au
     yy = cube.yy * 3600. * dist # in au
     v = cube.vaxis # km/s
@@ -316,42 +338,43 @@ def main():
 
     # model
     model = SSDisk(Ic, rc, beta, gamma, inc, pa, ms, vsys)
-    modelcube = model.build_cube(xx, yy, v, cube.beam, 0.5, dist)
-    #vmin, vmax = np.nanmin(modelcube), np.nanmax(modelcube)
+    modelcube = model.build_cube(xx, yy, v, cube.beam, 0.5, dist, 
+                                 ssdisk_gaussian_ring, {'ring_height' : 0.5, 'ring_loc' : 280., 'ring_width' : 10.})
+    vmin, vmax = np.nanmin(modelcube)*0.5, np.nanmax(modelcube)*0.5
 
 
-    # Now let's convert model cube into a fits file using wcs axis of the tempelate
-    #print(repr(cube.header))
-    model_hdu = fits.PrimaryHDU(data=modelcube, header=cube.header)
-    model_hdu.writeto("L1489_irs_model_3.fits", overwrite=True)
+    write_fits(model_cube = modelcube, header = cube.header)
 
 
+    print(np.shape(modelcube))
     # Let's get PV plot out of the modelcube  
-    pv_model = np.squeeze(modelcube[:, :, 0])
+    pv_model = np.squeeze(modelcube[:, :, 150])
+    #print(pv_model[22])
 
     print("Shape of pv model",np.shape(pv_model))
 
     # plot modelcube on top of observed cube (as contours)
 
-    plot_cube = False
+    plot_cube = True
 
     if plot_cube:
         canvas = AstroCanvas((6,7),(0,0), imagegrid=True)
         canvas.channelmaps(cube, contour=True, color=False,
                            #coord_center='04h04m43.07s 26d18m56.30s',
                            #nskip=2,
-                           #imscale = [-8, 8, -8, 8],
+                           imscale = [-7, 7, -7, 7],
             clevels = np.array([-3, 3.,6.,9.,12.,15.])*7e-3)
         for i, im in enumerate(modelcube):      #   Plotting model as image as raster
             if i < len(canvas.axes):
                 ax = canvas.axes[i]
                 ax.pcolormesh(xx / dist, yy / dist, im, shading='auto', rasterized=True,
                     vmin = vmin, vmax = vmax, cmap='PuBuGn')
+
             else:
                 break
         plt.show()
 
-    plot_PV = False
+    plot_PV = True
     if plot_PV:
 
         pv_obs = Imfits(f_PV, pv=True)
@@ -359,7 +382,9 @@ def main():
         print("Shape of observed pv", np.shape(pv_obs.data))
         rms_pv = pv_obs.estimate_noise()
 
+        
         canvas = AstroCanvas((1,1))
+
         pv_plot = canvas.pvdiagram(pv_obs,
                     vrel = True,
                     color = False,
@@ -379,23 +404,40 @@ def main():
                     colorbar = False 
                     )
         
-        # print(xx[0,:]/(dist+3.))
-        X, Y = np.meshgrid(xx[0,:]/(dist), v-7.4)
+
+        X, Y = np.meshgrid(yy[:,0]/(dist), -v+7.4)
         ax = canvas.axes[0]
-        a = ax.pcolormesh( X, Y, pv_model, shading='auto', rasterized=True,
-                     cmap='PuBuGn')
+        print(np.shape(X),np.shape(Y))
+
+        print(np.mean(pv_model))
+        print(np.std(pv_model))
+
+
+        pv_model[pv_model<0] = 1.e-18
+        vmin = np.nanmin(pv_model)
+        vmax = np.nanmax(pv_model)
+
+        print(vmin)
+        print(vmax)
+
+        # pv_model = (pv_model - np.mean(pv_model))/np.std(pv_model)
+
+        a = ax.pcolormesh( X, Y, pv_model, shading='auto', cmap='PuBuGn')
         
         plt.colorbar(a, ax=ax)
         plt.show()
 
-    print("At v = ", v[22] - 7.4)
-    print(pv_model[22,:])
 
-    plt.plot(xx[0,:]/dist, pv_model[22,:], label='center', color='green')
-    plt.plot(xx[0,:]/dist,pv_model[5,:], label = 'up', color = 'red' )
-    plt.plot(xx[0,:]/dist,pv_model[40,:], label = 'down', color = 'blue' )
-    plt.legend()
-    plt.show()
+    plt_rel_intensity=False
+    if plt_rel_intensity:
+        print("At v = ", v[22] - 7.4)
+        print(pv_model[22,:])
+
+        plt.plot(xx[0,:]/dist, pv_model[22,:], label='center', color='green')
+        plt.plot(xx[0,:]/dist,pv_model[5,:], label = 'up', color = 'red' )
+        plt.plot(xx[0,:]/dist,pv_model[40,:], label = 'down', color = 'blue' )
+        plt.legend()
+        plt.show()
 
 if __name__ == '__main__':
     main()
