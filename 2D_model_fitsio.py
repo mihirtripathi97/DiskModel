@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 from astropy import constants, units
 from dataclasses import dataclass
 from scipy.signal import convolve
-from spectral_cube import SpectralCube
 from astropy.io import fits
 import matplotlib.colors as colors
 
@@ -54,11 +53,18 @@ def ssdisk(r, Ic, rc, gamma, beta = None):
     beta_p = gamma if beta is None else beta # - beta = - gamma - q
     return Ic * (r/rc)**(- beta_p) * np.exp(-(r/rc)**(2. - gamma))
 
-def ssdisk_gaussian_ring(r, Ic, rc, gamma, beta = None, ring_hight = None, ring_loc = 600, ring_width = 1):
-    if A == None:
-        A = 0.
+def ssdisk_gaussian_ring(r, theta, Ic, rc, gamma, beta = None, ring_height = None, ring_loc = 600, ring_width = 1):
+    
+    if ring_height == None:
+        ring_height = 0.
+
+    print("In ss disk with gaussian ring")
+    print(ring_height)
+    print(ring_loc)
+    print(ring_width)
     beta_p = gamma if beta is None else beta # - beta = - gamma - q
-    return Ic * (r/rc)**(- beta_p) * np.exp(-(r/rc)**(2. - gamma)) + A*np.exp(-(r-r_ring/r_width)**2)
+    # Ic * (r/rc)**(- beta_p) * np.exp(-(r/rc)**(2. - gamma)) + ring_height*np.exp(-(r-ring_loc/ring_width)**2)
+    return  Ic * (r/rc)**(- beta_p) * np.exp(-(r/rc)**(2. - gamma)) + ring_height*np.exp(-(r-ring_loc/ring_width)**2)
 
 def gaussian_profile(r, I0, sigr):
     return I0*np.exp(-r**2./(2.*sigr**2))
@@ -173,10 +179,10 @@ def Bv_Jybeam(T,v,bmaj,bmin):
     Bv = Bv*bTOstr     # Jy/str --> Jy/beam
     return Bv
 
-def write_fits(path, ):
+def write_fits(model_cube, modelcube_header ):
     # Now let's convert model cube into a fits file using wcs axis of the tempelate
     #print(repr(cube.header))
-    model_hdu = fits.PrimaryHDU(data=modelcube, header=cube.header)
+    model_hdu = fits.PrimaryHDU(data = model_cube, header= modelcube_header )
     model_hdu.writeto("L1489_irs_model_3.fits", overwrite=True)
 
     return(0)
@@ -219,7 +225,7 @@ class SSDisk:
     def get_paramkeys(self):
         return list(self.__annotations__.keys())
 
-    def build(self, xx_sky, yy_sky, intensity_function = None, **kwargs):
+    def build(self, xx_sky, yy_sky, intensity_function = None, rp_kwargs = None):
         '''
         Build a model given sky coordinates and return a info for making a image cube.
         '''
@@ -245,15 +251,27 @@ class SSDisk:
             I_int = ssdisk(r, self.Ic, self.rc, self.gamma, self.beta)
 
         else:
-            I_int = intensity_function(r, theta, self.Ic, self.rc, **kwargs)
+            I_int = intensity_function(r, theta, self.Ic, self.rc, self.gamma, self.beta, **rp_kwargs)
 
-        plot_intensity_radii = False
+        plot_intensity_radii = True
+
+        if plot_intensity_radii:
+
+            fig, axes = plt.subplots()
+
+            axes.scatter(r, I_int, marker = 'o')
+
+            print("plotting intensity")
+            axes.set_xscale("log")
+
+            plt.show()
+            plt.close()
 
 
 
         return I_int.reshape(xx_sky.shape), vlos.reshape(xx_sky.shape)
 
-    def build_cube(self, xx, yy, v, beam = None, linewidth = 0., dist = 140., radial_profile = None, **rp_kwargs):
+    def build_cube(self, xx, yy, v, beam = None, linewidth = 0., dist = 140., radial_profile = None, rp_kwargs = None):
 
         """
         Builds an intensity cube given meshgrids of x,y and v axes. Convolves intesity with beam and line broadening.
@@ -270,11 +288,10 @@ class SSDisk:
 
         Returns:
         I_cube          : `np.ndarray` of shape (len(v), len(y), len(x))
-        I_int           : `np.ndarray` of shape (len(x_sky), len(y_sky))
-
+        I_int           : `np.ndarray` of shape (len(x_sky), len(y_sky)), gives integrated intensity over whole spectral cube
         """
         # get intensity and velocity fields
-        I_int, vlos = self.build(xx, yy, intensity_function = None, **rp_kwargs = None)
+        I_int, vlos = self.build(xx, yy, intensity_function = radial_profile, rp_kwargs = rp_kwargs)
         
         # vaxes
         ny, nx = xx.shape
@@ -302,7 +319,7 @@ class SSDisk:
 
         # line broadening
         if linewidth is not None:
-            gaussbeam = np.exp(-( (v - self.vsys) /(2. * linewidth / 2.35))**2.)
+            gaussbeam = np.exp(- 0.5 * ( (v - self.vsys) /(linewidth / 2.35))**2.)
             I_cube = convolve(I_cube, np.array([[gaussbeam]]).T, mode='same')
 
         return I_cube, I_int
@@ -310,8 +327,8 @@ class SSDisk:
 def main():
     # --------- input ---------
     # model params
-    Ic, rc, beta, gamma = [1., 600., 1.5, 1.] # rc 
-    inc = 73.
+    Ic, rc, beta, gamma = [0.5, 600., 1.5, 1.] # rc 
+    inc = 80.
     pa = 0.
     ms = 1.6
     vsys = 7.3
@@ -338,22 +355,33 @@ def main():
 
     # model
     model = SSDisk(Ic, rc, beta, gamma, inc, pa, ms, vsys)
-    modelcube = model.build_cube(xx, yy, v, cube.beam, 0.5, dist, 
-                                 ssdisk_gaussian_ring, {'ring_height' : 0.5, 'ring_loc' : 280., 'ring_width' : 10.})
+    # xx, yy, v, beam = None, linewidth = 0., dist = 140., radial_profile = None, **rp_kwargs
+    modelcube, model_int_map = model.build_cube(xx, yy, v, cube.beam, 0.5, dist, 
+                                 radial_profile = None, rp_kwargs = {'ring_height' : 120, 'ring_loc' : 27500., 'ring_width' : 80.})
     vmin, vmax = np.nanmin(modelcube)*0.5, np.nanmax(modelcube)*0.5
 
 
-    write_fits(model_cube = modelcube, header = cube.header)
+    write_fits(model_cube = modelcube, modelcube_header= cube.header)
 
 
     print(np.shape(modelcube))
     # Let's get PV plot out of the modelcube  
     pv_model = np.squeeze(modelcube[:, :, 150])
-    #print(pv_model[22])
 
-    print("Shape of pv model",np.shape(pv_model))
+    plot_int_map = True
 
-    # plot modelcube on top of observed cube (as contours)
+    if plot_int_map == True:
+        
+        fig, axes = plt.subplots()
+
+        a = axes.pcolormesh(xx / dist, yy / dist, model_int_map, shading='auto', rasterized=True,
+         cmap='PuBuGn', vmin = np.nanmin(model_int_map), vmax = np.nanmax(model_int_map)*0.5)
+        plt.colorbar(a,ax = axes)
+        plt.show()
+        plt.close()
+
+
+
 
     plot_cube = True
 
@@ -388,6 +416,7 @@ def main():
         pv_plot = canvas.pvdiagram(pv_obs,
                     vrel = True,
                     color = False,
+                    ccolor = 'green',
                     #cmap = 'inferno',
                     vmin = -2.0,
                     vmax = 14.0,
@@ -404,40 +433,21 @@ def main():
                     colorbar = False 
                     )
         
-
-        X, Y = np.meshgrid(yy[:,0]/(dist), -v+7.4)
+        X, Y = np.meshgrid(xx[0,:]/(dist), v-7.4)
         ax = canvas.axes[0]
-        print(np.shape(X),np.shape(Y))
-
-        print(np.mean(pv_model))
-        print(np.std(pv_model))
-
+        
 
         pv_model[pv_model<0] = 1.e-18
         vmin = np.nanmin(pv_model)
         vmax = np.nanmax(pv_model)
 
-        print(vmin)
-        print(vmax)
 
-        # pv_model = (pv_model - np.mean(pv_model))/np.std(pv_model)
-
-        a = ax.pcolormesh( X, Y, pv_model, shading='auto', cmap='PuBuGn')
+        a = ax.pcolormesh(X, Y, pv_model, shading='auto', cmap='inferno', rasterized=True,
+                    vmin = vmin, vmax = vmax*0.5)
         
         plt.colorbar(a, ax=ax)
         plt.show()
 
-
-    plt_rel_intensity=False
-    if plt_rel_intensity:
-        print("At v = ", v[22] - 7.4)
-        print(pv_model[22,:])
-
-        plt.plot(xx[0,:]/dist, pv_model[22,:], label='center', color='green')
-        plt.plot(xx[0,:]/dist,pv_model[5,:], label = 'up', color = 'red' )
-        plt.plot(xx[0,:]/dist,pv_model[40,:], label = 'down', color = 'blue' )
-        plt.legend()
-        plt.show()
 
 if __name__ == '__main__':
     main()
