@@ -10,10 +10,9 @@ from scipy.signal import convolve
 current_path = os.getcwd()
 print(current_path)
 # Check if it is office computer or laptop and set path of imfits accordingly
-if current_path.split(sep=':')[0] == 'D':                           # Office computer
-    print("In office")
-    sys.path.append("D:\L1489_IRS_ssp\imfits")
-else:                                                               # Laptop N
+if current_path.split(sep=":")[0].lower() == "d":
+    sys.path.append("d:\L1489_IRS_ssp\imfits")
+else:  # Laptop N
     sys.path.append("E:/Mihir_new/ASIAA-SSP/imfits/")
 
 from imfits import Imfits
@@ -212,7 +211,7 @@ class SSDisk:
     def get_paramkeys(self):
         return list(self.__annotations__.keys())
 
-    def build(self, xx_sky, yy_sky):
+    def build(self, xx_sky, yy_sky, plot_intensity_radial_profile = False):
         '''
         Build a model given sky coordinates and return a info for making a image cube.
         '''
@@ -234,9 +233,9 @@ class SSDisk:
         vlos = vkep(r * auTOcm, self.ms * Msun)*np.cos(th) * np.sin(_inc_rad) * 1.e-5 + self.vsys # cm/s --> km/s
         I_int = ssdisk(r, self.Ic, self.rc, self.gamma, self.beta)
 
-        plot_intensity_radii = False
 
-        if plot_intensity_radii:
+
+        if plot_intensity_radial_profile:
 
             fig, axes = plt.subplots()
 
@@ -246,14 +245,14 @@ class SSDisk:
             axes.set_xscale("log")
 
             plt.show()
-            plt.close()
+            #plt.close()
 
         return I_int.reshape(xx_sky.shape), vlos.reshape(xx_sky.shape)
 
 
-    def build_cube(self, xx, yy, v, beam = None, linewidth = 0., dist = 140.):
+    def build_cube(self, xx, yy, v, beam = None, linewidth = 0., dist = 140., plot_intensity=False ):
         # get intensity and velocity fields
-        I_int, vlos = self.build(xx, yy)
+        I_int, vlos = self.build(xx, yy, plot_intensity)
         
         # vaxes
         ny, nx = xx.shape
