@@ -50,9 +50,10 @@ def ssdisk(r, Ic, rc, gamma, beta = None):
     beta_p = gamma if beta is None else beta # - beta = - gamma - q
     return Ic * (r/rc)**(- beta_p) * np.exp(-(r/rc)**(2. - gamma))
 
-def ssdisk_gaussian_ring(r, Ic, rc, gamma, r_ring, beta = None):
+def ssdisk_gaussian_ring(r:list[float] = 1000, Ic:float=1., rc:float=600, 
+                         gamma:float=2.0, r_ring:float=200, ring_peak:float = 0.5,  beta = 0.5):
     beta_p = gamma if beta is None else beta # - beta = - gamma - q
-    return Ic * (r/rc)**(- beta_p) * np.exp(-(r/rc)**(2. - gamma)) + np.exp((r-r_ring/10)**2)
+    return Ic * (r/rc)**(- beta_p) * np.exp(-(r/rc)**(2. - gamma)) + ring_peak*Ic*np.exp(-(r-r_ring/10)**2)
 
 def gaussian_profile(r, I0, sigr):
     return I0*np.exp(-r**2./(2.*sigr**2))
@@ -182,6 +183,7 @@ class SSDisk:
     pa: float = 0.
     ms: float = 0.
     vsys: float = 0.
+    r_ring: float = 0.5
 
     def set_params(self, Ic = 0, rc = 0, beta = 0, gamma = 0, 
         inc = 0, pa = 0, ms = 0, vsys = 0):
@@ -211,7 +213,7 @@ class SSDisk:
     def get_paramkeys(self):
         return list(self.__annotations__.keys())
 
-    def build(self, xx_sky, yy_sky, plot_intensity_radial_profile = False):
+    def build(self, xx_sky, yy_sky, profile_type= 'ssdisk', plot_intensity_radial_profile = False):
         '''
         Build a model given sky coordinates and return a info for making a image cube.
         '''
@@ -231,7 +233,11 @@ class SSDisk:
 
         # take y-axis as the line of sight
         vlos = vkep(r * auTOcm, self.ms * Msun)*np.cos(th) * np.sin(_inc_rad) * 1.e-5 + self.vsys # cm/s --> km/s
-        I_int = ssdisk(r, self.Ic, self.rc, self.gamma, self.beta)
+
+        if profile_type.lower() == 'ssdisk':
+            I_int = ssdisk(r, self.Ic, self.rc, self.gamma, self.beta)
+        elif profile_type.lower() == 'gauss_ring':
+            I_int = ssdisk_gaussian_ring(r, self.Ic, self.rc, self.gamma, self.r_ring, self.beta)
 
 
 
@@ -243,6 +249,7 @@ class SSDisk:
 
             print("plotting intensity")
             axes.set_xscale("log")
+            axes.set_xlim(0.1, 1.2*max(r))
 
             plt.show()
             #plt.close()
@@ -250,9 +257,11 @@ class SSDisk:
         return I_int.reshape(xx_sky.shape), vlos.reshape(xx_sky.shape)
 
 
-    def build_cube(self, xx, yy, v, beam = None, linewidth = 0., dist = 140., plot_intensity=False ):
+    def build_cube(self, xx, yy, v, beam = None, linewidth = 0., dist = 140., 
+                   profile_type:str = {'ssdisk', 'gauss_ring'}, plot_intensity=False):
+        
         # get intensity and velocity fields
-        I_int, vlos = self.build(xx, yy, plot_intensity)
+        I_int, vlos = self.build(xx, yy, profile_type, plot_intensity)
         
         # vaxes
         ny, nx = xx.shape

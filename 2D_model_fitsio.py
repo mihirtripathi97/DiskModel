@@ -184,8 +184,8 @@ def write_fits(model_cube, modelcube_header ):
     #print(repr(cube.header))
     model_hdu = fits.PrimaryHDU(data = model_cube, header= modelcube_header )
     model_hdu.writeto("L1489_irs_model_3.fits", overwrite=True)
-
     return(0)
+
 @dataclass()
 class SSDisk:
 
