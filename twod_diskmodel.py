@@ -50,10 +50,23 @@ def ssdisk(r, Ic, rc, gamma, beta = None):
     beta_p = gamma if beta is None else beta # - beta = - gamma - q
     return Ic * (r/rc)**(- beta_p) * np.exp(-(r/rc)**(2. - gamma))
 
-def ssdisk_gaussian_ring(r:list[float] = 1000, Ic:float=1., rc:float=600, 
-                         gamma:float=2.0, r_ring:float=200, ring_peak:float = 0.5,  beta = 0.5):
+def ssdisk_gaussian_ring(r:list[float] = [10,50,100,500,1000], Ic:float=1., rc:float=600, 
+                         gamma:float=2.0, r_ring:float=200, ring_peak:float = 0.5,  
+                         beta = 0.5, ring_width = 20.):
+    
     beta_p = gamma if beta is None else beta # - beta = - gamma - q
-    return Ic * (r/rc)**(- beta_p) * np.exp(-(r/rc)**(2. - gamma)) + ring_peak*Ic*np.exp(-(r-r_ring/10)**2)
+    ssdisk_profile = Ic * (r/rc)**(- beta_p) * np.exp(-(r/rc)**(2. - gamma))
+    print(np.shape(ssdisk_profile), type(ssdisk_profile))
+    print("Inside gauss ring Imax of ss disk, ", max(ssdisk_profile), " location = ", r_ring)
+    modulation = ring_peak*max(ssdisk_profile)*np.exp(-0.5*(r-r_ring/ring_width)**2)
+    print(np.shape(modulation), type(modulation))
+
+    #plt.plot(ssdisk_profile*modulation)
+    plt.plot(r)
+    plt.grid()
+    #plt.xscale('log')
+    plt.show()
+    return ssdisk_profile*modulation
 
 def gaussian_profile(r, I0, sigr):
     return I0*np.exp(-r**2./(2.*sigr**2))
@@ -184,9 +197,11 @@ class SSDisk:
     ms: float = 0.
     vsys: float = 0.
     r_ring: float = 0.5
+    ring_peak: float = 0.9      # Fraction of central intensity
+    ring_width: float = 20.        # In same units as Rc
 
     def set_params(self, Ic = 0, rc = 0, beta = 0, gamma = 0, 
-        inc = 0, pa = 0, ms = 0, vsys = 0):
+        inc = 0, pa = 0, ms = 0, vsys = 0, r_ring = 100, ring_peak = 0.9, ring_width = 20.):
         '''
 
         Parameters
@@ -208,7 +223,9 @@ class SSDisk:
         self.pa = pa
         self.ms = ms
         self.vsys = vsys
-
+        self.r_ring = r_ring
+        self.ring_peak = ring_peak
+        self.ring_width = ring_width
 
     def get_paramkeys(self):
         return list(self.__annotations__.keys())
@@ -237,7 +254,9 @@ class SSDisk:
         if profile_type.lower() == 'ssdisk':
             I_int = ssdisk(r, self.Ic, self.rc, self.gamma, self.beta)
         elif profile_type.lower() == 'gauss_ring':
-            I_int = ssdisk_gaussian_ring(r, self.Ic, self.rc, self.gamma, self.r_ring, self.beta)
+            I_int = ssdisk_gaussian_ring(r=r, Ic=self.Ic, rc=self.rc, gamma=self.gamma, 
+                                         r_ring=self.r_ring, beta = self.beta, ring_peak= self.ring_peak,
+                                         ring_width = self.ring_width)
 
 
 
@@ -249,8 +268,10 @@ class SSDisk:
 
             print("plotting intensity")
             axes.set_xscale("log")
-            axes.set_xlim(0.1, 1.2*max(r))
-
+            axes.set_xlabel("r (au)")
+            axes.set_ylabel(r"I$_{v}$ ()")
+            axes.set_xlim(1., 1.2*max(r))
+            axes.grid()
             plt.show()
             #plt.close()
 
@@ -289,7 +310,7 @@ class SSDisk:
 
         # line broadening
         if linewidth is not None:
-            gaussbeam = np.exp(-( (v - self.vsys) /(2. * linewidth / 2.35))**2.)
+            gaussbeam = np.exp(-0.5*((v - self.vsys) /(linewidth / 2.35))**2.)  # Linewidth to be in same units as Velocity
             I_cube = convolve(I_cube, np.array([[gaussbeam]]).T, mode='same')
 
         return I_cube

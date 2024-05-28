@@ -53,7 +53,8 @@ def ssdisk(r, Ic, rc, gamma, beta = None):
     beta_p = gamma if beta is None else beta # - beta = - gamma - q
     return Ic * (r/rc)**(- beta_p) * np.exp(-(r/rc)**(2. - gamma))
 
-def ssdisk_gaussian_ring(r, theta, Ic, rc, gamma, beta = None, ring_height = None, ring_loc = 600, ring_width = 1):
+def ssdisk_gaussian_ring(r, theta, Ic, rc, gamma, beta = None, ring_height = None, 
+                         ring_loc = 600, ring_width = 1):
     
     if ring_height == None:
         ring_height = 0.
@@ -64,7 +65,9 @@ def ssdisk_gaussian_ring(r, theta, Ic, rc, gamma, beta = None, ring_height = Non
     print(ring_width)
     beta_p = gamma if beta is None else beta # - beta = - gamma - q
     # Ic * (r/rc)**(- beta_p) * np.exp(-(r/rc)**(2. - gamma)) + ring_height*np.exp(-(r-ring_loc/ring_width)**2)
-    return  Ic * (r/rc)**(- beta_p) * np.exp(-(r/rc)**(2. - gamma)) + ring_height*np.exp(-(r-ring_loc/ring_width)**2)
+    profile = Ic * (r/rc)**(- beta_p) * np.exp(-(r/rc)**(2. - gamma)) + ring_height*np.exp(-(r-ring_loc/ring_width)**2)
+
+    return  profile
 
 def gaussian_profile(r, I0, sigr):
     return I0*np.exp(-r**2./(2.*sigr**2))
@@ -180,7 +183,7 @@ def Bv_Jybeam(T,v,bmaj,bmin):
     return Bv
 
 def write_fits(model_cube, modelcube_header ):
-    # Now let's convert model cube into a fits file using wcs axis of the tempelate
+    # Now let's convert model cube into a fits file using wcs axis of the template
     #print(repr(cube.header))
     model_hdu = fits.PrimaryHDU(data = model_cube, header= modelcube_header )
     model_hdu.writeto("L1489_irs_model_3.fits", overwrite=True)
@@ -251,7 +254,8 @@ class SSDisk:
             I_int = ssdisk(r, self.Ic, self.rc, self.gamma, self.beta)
 
         else:
-            I_int = intensity_function(r, theta, self.Ic, self.rc, self.gamma, self.beta, **rp_kwargs)
+            I_int = intensity_function(r, theta, self.Ic, self.rc, 
+                                       self.gamma, self.beta, **rp_kwargs)
 
         plot_intensity_radii = True
 
@@ -259,7 +263,7 @@ class SSDisk:
 
             fig, axes = plt.subplots()
 
-            axes.scatter(r, I_int, marker = 'o')
+            axes.plot(np.sort(r, kind='stable'), I_int, marker = 'o', ms = 0.1)
 
             print("plotting intensity")
             axes.set_xscale("log")
@@ -271,7 +275,8 @@ class SSDisk:
 
         return I_int.reshape(xx_sky.shape), vlos.reshape(xx_sky.shape)
 
-    def build_cube(self, xx, yy, v, beam = None, linewidth = 0., dist = 140., radial_profile = None, rp_kwargs = None):
+    def build_cube(self, xx, yy, v, beam = None, linewidth = 0., 
+                   dist = 140., radial_profile = None, rp_kwargs = None):
 
         """
         Builds an intensity cube given meshgrids of x,y and v axes. Convolves intesity with beam and line broadening.
@@ -291,7 +296,8 @@ class SSDisk:
         I_int           : `np.ndarray` of shape (len(x_sky), len(y_sky)), gives integrated intensity over whole spectral cube
         """
         # get intensity and velocity fields
-        I_int, vlos = self.build(xx, yy, intensity_function = radial_profile, rp_kwargs = rp_kwargs)
+        I_int, vlos = self.build(xx, yy, intensity_function = radial_profile, 
+                                 rp_kwargs = rp_kwargs)
         
         # vaxes
         ny, nx = xx.shape
@@ -327,8 +333,8 @@ class SSDisk:
 def main():
     # --------- input ---------
     # model params
-    Ic, rc, beta, gamma = [0.5, 600., 1.5, 1.] # rc 
-    inc = 80.
+    Ic, rc, beta, gamma = [1, 600., 1.5, 1.] # rc 
+    inc = 73.
     pa = 0.
     ms = 1.6
     vsys = 7.3
@@ -356,8 +362,10 @@ def main():
     # model
     model = SSDisk(Ic, rc, beta, gamma, inc, pa, ms, vsys)
     # xx, yy, v, beam = None, linewidth = 0., dist = 140., radial_profile = None, **rp_kwargs
-    modelcube, model_int_map = model.build_cube(xx, yy, v, cube.beam, 0.5, dist, 
-                                 radial_profile = None, rp_kwargs = {'ring_height' : 120, 'ring_loc' : 27500., 'ring_width' : 80.})
+    modelcube, model_int_map = model.build_cube(xx, yy, v, cube.beam, 0.7, dist, 
+                                 radial_profile = ssdisk_gaussian_ring, 
+                                 rp_kwargs = {'ring_height' : 120, 'ring_loc' : 200., 
+                                              'ring_width' : 80.})
     vmin, vmax = np.nanmin(modelcube)*0.5, np.nanmax(modelcube)*0.5
 
 
@@ -368,7 +376,7 @@ def main():
     # Let's get PV plot out of the modelcube  
     pv_model = np.squeeze(modelcube[:, :, 150])
 
-    plot_int_map = True
+    plot_int_map = False
 
     if plot_int_map == True:
         
@@ -380,10 +388,7 @@ def main():
         plt.show()
         plt.close()
 
-
-
-
-    plot_cube = True
+    plot_cube = False
 
     if plot_cube:
         canvas = AstroCanvas((6,7),(0,0), imagegrid=True)
