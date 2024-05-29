@@ -59,15 +59,13 @@ def ssdisk_gaussian_ring(r, theta, Ic, rc, gamma, beta = None, ring_height = Non
     if ring_height == None:
         ring_height = 0.
 
-    print("In ss disk with gaussian ring")
-    print(ring_height)
-    print(ring_loc)
-    print(ring_width)
     beta_p = gamma if beta is None else beta # - beta = - gamma - q
-    # Ic * (r/rc)**(- beta_p) * np.exp(-(r/rc)**(2. - gamma)) + ring_height*np.exp(-(r-ring_loc/ring_width)**2)
-    profile = Ic * (r/rc)**(- beta_p) * np.exp(-(r/rc)**(2. - gamma)) + ring_height*np.exp(-(r-ring_loc/ring_width)**2)
 
-    return  profile
+    profile_ssdisk = Ic * (r/rc)**(- beta_p) * np.exp(-(r/rc)**(2. - gamma)) 
+    profile_gauss_out = np.max(profile_ssdisk)*ring_height*np.exp(-((r-ring_loc)/ring_width)**2)
+    profile_gauss_in = np.max(profile_ssdisk)*(2.5)*ring_height*np.exp(-((r-63.)/190.)**2)
+
+    return  profile_gauss_in + profile_gauss_out
 
 def gaussian_profile(r, I0, sigr):
     return I0*np.exp(-r**2./(2.*sigr**2))
@@ -196,8 +194,8 @@ class SSDisk:
     rc: float = 1.              #  Outer radius of disk model in AU
     beta: float = 0.
     gamma: float = 0.
-    inc: float = 0.
-    pa: float = 0.
+    inc: float = 73.
+    pa: float = 69.
     ms: float = 0.
     vsys: float = 0.
 
@@ -244,6 +242,8 @@ class SSDisk:
 
         # local coordinates
         r = np.sqrt(xp * xp + yp * yp) # radius
+        print(r)
+        print(max(r), min(r))
         theta = np.arctan2(yp, xp) # azimuthal angle (rad)
 
         # take y-axis as the line of sight
@@ -262,12 +262,13 @@ class SSDisk:
         if plot_intensity_radii:
 
             fig, axes = plt.subplots()
-
-            axes.plot(np.sort(r, kind='stable'), I_int, marker = 'o', ms = 0.1)
-
+            axes.scatter(r/(140.), I_int, marker = 'o', s = 2.)
             print("plotting intensity")
+            axes.set_xlim(0.1, 3.)
+            axes.set_ylim(1,100)
+            axes.set_yscale('log')
             axes.set_xscale("log")
-
+            axes.grid()
             plt.show()
             plt.close()
 
@@ -333,8 +334,8 @@ class SSDisk:
 def main():
     # --------- input ---------
     # model params
-    Ic, rc, beta, gamma = [1, 600., 1.5, 1.] # rc 
-    inc = 73.
+    Ic, rc, beta, gamma = [1, 600., None, 0.9] # rc 
+    inc = 10.
     pa = 0.
     ms = 1.6
     vsys = 7.3
@@ -364,8 +365,8 @@ def main():
     # xx, yy, v, beam = None, linewidth = 0., dist = 140., radial_profile = None, **rp_kwargs
     modelcube, model_int_map = model.build_cube(xx, yy, v, cube.beam, 0.7, dist, 
                                  radial_profile = ssdisk_gaussian_ring, 
-                                 rp_kwargs = {'ring_height' : 120, 'ring_loc' : 200., 
-                                              'ring_width' : 80.})
+                                 rp_kwargs = {'ring_height' : 0.1, 'ring_loc' : 350., 
+                                              'ring_width' : 50.})
     vmin, vmax = np.nanmin(modelcube)*0.5, np.nanmax(modelcube)*0.5
 
 
@@ -376,14 +377,14 @@ def main():
     # Let's get PV plot out of the modelcube  
     pv_model = np.squeeze(modelcube[:, :, 150])
 
-    plot_int_map = False
+    plot_int_map = True
 
     if plot_int_map == True:
         
         fig, axes = plt.subplots()
 
-        a = axes.pcolormesh(xx / dist, yy / dist, model_int_map, shading='auto', rasterized=True,
-         cmap='PuBuGn', vmin = np.nanmin(model_int_map), vmax = np.nanmax(model_int_map)*0.5)
+        a = axes.pcolormesh(xx / dist, yy / dist, np.log(model_int_map), shading='auto', rasterized=True,
+         cmap='PuBuGn', vmin = np.nanmin(model_int_map), vmax = np.nanmax(model_int_map))
         plt.colorbar(a,ax = axes)
         plt.show()
         plt.close()
@@ -407,7 +408,7 @@ def main():
                 break
         plt.show()
 
-    plot_PV = True
+    plot_PV = False
     if plot_PV:
 
         pv_obs = Imfits(f_PV, pv=True)

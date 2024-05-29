@@ -61,12 +61,7 @@ def ssdisk_gaussian_ring(r:list[float] = [10,50,100,500,1000], Ic:float=1., rc:f
     modulation = ring_peak*max(ssdisk_profile)*np.exp(-0.5*(r-r_ring/ring_width)**2)
     print(np.shape(modulation), type(modulation))
 
-    #plt.plot(ssdisk_profile*modulation)
-    plt.plot(r)
-    plt.grid()
-    #plt.xscale('log')
-    plt.show()
-    return ssdisk_profile*modulation
+    return  modulation    #np.add(ssdisk_profile, modulation)
 
 def gaussian_profile(r, I0, sigr):
     return I0*np.exp(-r**2./(2.*sigr**2))
@@ -264,7 +259,7 @@ class SSDisk:
 
             fig, axes = plt.subplots()
 
-            axes.plot(r, I_int, marker = 'o')
+            axes.scatter(r, I_int, marker = 'o', s=5.)
 
             print("plotting intensity")
             axes.set_xscale("log")
