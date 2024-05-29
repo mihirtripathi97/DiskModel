@@ -334,8 +334,8 @@ class SSDisk:
 def main():
     # --------- input ---------
     # model params
-    Ic, rc, beta, gamma = [1, 600., None, 0.9] # rc 
-    inc = 10.
+    Ic, rc, beta, gamma = [1e-26, 600., None, 0.9] # rc 
+    inc = 73.
     pa = 0.
     ms = 1.6
     vsys = 7.3
@@ -383,13 +383,13 @@ def main():
         
         fig, axes = plt.subplots()
 
-        a = axes.pcolormesh(xx / dist, yy / dist, np.log(model_int_map), shading='auto', rasterized=True,
+        a = axes.pcolormesh(-xx / dist, yy / dist, model_int_map, shading='auto', rasterized=True,
          cmap='PuBuGn', vmin = np.nanmin(model_int_map), vmax = np.nanmax(model_int_map))
         plt.colorbar(a,ax = axes)
         plt.show()
         plt.close()
 
-    plot_cube = False
+    plot_cube = True
 
     if plot_cube:
         canvas = AstroCanvas((6,7),(0,0), imagegrid=True)
@@ -408,7 +408,7 @@ def main():
                 break
         plt.show()
 
-    plot_PV = False
+    plot_PV = True
     if plot_PV:
 
         pv_obs = Imfits(f_PV, pv=True)
@@ -449,7 +449,7 @@ def main():
 
 
         a = ax.pcolormesh(X, Y, pv_model, shading='auto', cmap='inferno', rasterized=True,
-                    vmin = vmin, vmax = vmax*0.5)
+                    vmin = vmin, vmax = vmax)
         
         plt.colorbar(a, ax=ax)
         plt.show()
