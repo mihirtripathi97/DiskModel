@@ -61,11 +61,12 @@ def ssdisk_gaussian_ring(r, theta, Ic, rc, gamma, beta = None, ring_height = Non
 
     beta_p = gamma if beta is None else beta # - beta = - gamma - q
 
-    profile_ssdisk = Ic * (r/rc)**(- beta_p) * np.exp(-(r/rc)**(2. - gamma)) 
-    profile_gauss_out = np.max(profile_ssdisk)*ring_height*np.exp(-((r-ring_loc)/ring_width)**2)
-    profile_gauss_in = np.max(profile_ssdisk)*(2.5)*ring_height*np.exp(-((r-63.)/190.)**2)
+    profile_ssdisk = Ic * ((r/rc)**(- beta_p))*((np.exp(-(r/rc)))**(2. - gamma)) 
+    profile_gauss_out = Ic*ring_height*np.exp(-((r-ring_loc)**2/(2*ring_width**2)))
+    profile_gauss_gap = -Ic*3*np.exp(-((r-160.)**2/(2*(30.**2))))
+    profile_gauss_in = Ic*(ring_height+7.)*np.exp(-((r-60.)**2/(2*(90.**2))))
 
-    return  profile_gauss_in + profile_gauss_out
+    return  profile_gauss_out + profile_gauss_in + profile_gauss_gap
 
 def gaussian_profile(r, I0, sigr):
     return I0*np.exp(-r**2./(2.*sigr**2))
@@ -180,11 +181,11 @@ def Bv_Jybeam(T,v,bmaj,bmin):
     Bv = Bv*bTOstr     # Jy/str --> Jy/beam
     return Bv
 
-def write_fits(model_cube, modelcube_header ):
+def write_fits(model_cube, modelcube_header, fits_name):
     # Now let's convert model cube into a fits file using wcs axis of the template
     #print(repr(cube.header))
     model_hdu = fits.PrimaryHDU(data = model_cube, header= modelcube_header )
-    model_hdu.writeto("L1489_irs_model_3.fits", overwrite=True)
+    model_hdu.writeto(fits_name, overwrite=True)
     return(0)
 
 @dataclass()
@@ -241,9 +242,8 @@ class SSDisk:
         yp /= np.cos(_inc_rad)
 
         # local coordinates
-        r = np.sqrt(xp * xp + yp * yp) # radius
-        print(r)
-        print(max(r), min(r))
+        r = np.sqrt(xp * xp + yp * yp) # radius in AU
+
         theta = np.arctan2(yp, xp) # azimuthal angle (rad)
 
         # take y-axis as the line of sight
@@ -265,7 +265,7 @@ class SSDisk:
             axes.scatter(r/(140.), I_int, marker = 'o', s = 2.)
             print("plotting intensity")
             axes.set_xlim(0.1, 3.)
-            axes.set_ylim(1,100)
+            axes.set_ylim(0.1,20)
             axes.set_yscale('log')
             axes.set_xscale("log")
             axes.grid()
@@ -334,15 +334,17 @@ class SSDisk:
 def main():
     # --------- input ---------
     # model params
-    Ic, rc, beta, gamma = [1e-26, 600., None, 0.9] # rc 
-    inc = 73.
+    Ic, rc, beta, gamma = [1., 600., 1.1, 0.9] # rc 
+    inc = 78.
     pa = 0.
     ms = 1.6
     vsys = 7.3
     dist = 140.
 
     # Observed disk cube
-    f_cube = 'uid___A002_b_6.cal.l1489_irs.spw_1_7.line.cube.clean.c_baseline_0.image.pbcor.Regridded.Smoothened.fits'
+    f_cube = 'l1489_b6_symmetric_chnl_line_cube_clean_c_baseline.image.pbcor.Regridded.Smoothned.fits' 
+
+    # uid___A002_b_6.cal.l1489_irs.spw_1_7.line.cube.clean.c_baseline_0.image.pbcor.Regridded.Smoothened.fits
     
     # Observed disk PV
     f_PV = 'uid___A002_b_6.cal.l1489_irs.spw_1_7.line.cube.clean.c_baseline_0.image.pbcor.Regridded.Smoothened.PV_69_w1.fits'
@@ -352,30 +354,32 @@ def main():
     cube = Imfits(f_cube)
     # shift coordinate center (the mesh grid will now bw centerd on pixel at this location)
     cube.shift_coord_center(coord_center = '04h04m43.07s 26d18m56.30s')
-    cube.trim_data([-9., 9.,], [-9.,9.], [2.7, 11.9])
-    # cube.trim_data(vlim = [1.19,13.5])   # trim_data([RA range in arcsec offset from center], [Dec range], [offset velocity range in kmps])
+    cube.trim_data([-9., 9.,], [-9.,9.] ) # , [2.7, 12.]
+    # trim_data([RA range in arcsec offset from center], [Dec range], [offset velocity range in kmps])
     
     xx = cube.xx * 3600. * dist # in au
     yy = cube.yy * 3600. * dist # in au
     v = cube.vaxis # km/s
 
-
     # model
     model = SSDisk(Ic, rc, beta, gamma, inc, pa, ms, vsys)
     # xx, yy, v, beam = None, linewidth = 0., dist = 140., radial_profile = None, **rp_kwargs
-    modelcube, model_int_map = model.build_cube(xx, yy, v, cube.beam, 0.7, dist, 
+    modelcube, model_int_map = model.build_cube(xx, yy, v, cube.beam, 0.077, dist, 
                                  radial_profile = ssdisk_gaussian_ring, 
-                                 rp_kwargs = {'ring_height' : 0.1, 'ring_loc' : 350., 
-                                              'ring_width' : 50.})
-    vmin, vmax = np.nanmin(modelcube)*0.5, np.nanmax(modelcube)*0.5
+                                 rp_kwargs = {'ring_height' : 7., 'ring_loc' : 290., 
+                                              'ring_width' : 60.})
+    vmin, vmax = np.nanmin(modelcube), np.nanmax(modelcube)
 
 
-    write_fits(model_cube = modelcube, modelcube_header= cube.header)
+    write_fits(model_cube = modelcube, modelcube_header= cube.header,
+               fits_name = 'L1489irs_model_i_new'+str(inc)+'.fits')
 
 
     print(np.shape(modelcube))
+
     # Let's get PV plot out of the modelcube  
     pv_model = np.squeeze(modelcube[:, :, 150])
+
 
     plot_int_map = True
 
@@ -384,17 +388,17 @@ def main():
         fig, axes = plt.subplots()
 
         a = axes.pcolormesh(-xx / dist, yy / dist, model_int_map, shading='auto', rasterized=True,
-         cmap='PuBuGn', vmin = np.nanmin(model_int_map), vmax = np.nanmax(model_int_map))
+                             cmap='PuBuGn', vmin = np.nanmin(model_int_map), 
+                             vmax = np.nanmax(model_int_map))
         plt.colorbar(a,ax = axes)
         plt.show()
         plt.close()
 
-    plot_cube = True
+    plot_cube = False #True #True
 
     if plot_cube:
         canvas = AstroCanvas((6,7),(0,0), imagegrid=True)
         canvas.channelmaps(cube, contour=True, color=False,
-                           #coord_center='04h04m43.07s 26d18m56.30s',
                            #nskip=2,
                            imscale = [-7, 7, -7, 7],
             clevels = np.array([-3, 3.,6.,9.,12.,15.])*7e-3)
@@ -408,7 +412,8 @@ def main():
                 break
         plt.show()
 
-    plot_PV = True
+    plot_PV = True # True
+
     if plot_PV:
 
         pv_obs = Imfits(f_PV, pv=True)
@@ -423,23 +428,20 @@ def main():
                     vrel = True,
                     color = False,
                     ccolor = 'green',
-                    #cmap = 'inferno',
                     vmin = -2.0,
-                    vmax = 14.0,
+                    vmax = 12.0,
                     contour = True,
                     clip = 0.0000000,
                     #ylim = [-8.5,6.5],
                     clevels = np.array([3,7,10,15,25,35,45])*rms_pv,
                     x_offset = True, # If true, offset (radial distance from star) will be the x axis
-                    vsys = 7.3, # systemic velocity in kmps
+                    vsys = 7.33, # systemic velocity in kmps
                     ln_var = True, # plot vertical center (systemic velocity)
                     ln_hor = True, # plot horizontal center (zero offset)
-                    #cbaroptions = ('right', '3%', '3%'),
-                    #cbarlabel = r'(Jy beam$^{-1})$',
                     colorbar = False 
                     )
         
-        X, Y = np.meshgrid(xx[0,:]/(dist), v-7.4)
+        X, Y = np.meshgrid(xx[0,:]/(dist), v-7.33)
         ax = canvas.axes[0]
         
 
@@ -447,9 +449,9 @@ def main():
         vmin = np.nanmin(pv_model)
         vmax = np.nanmax(pv_model)
 
-
+        #print(vmin, vmax)
         a = ax.pcolormesh(X, Y, pv_model, shading='auto', cmap='inferno', rasterized=True,
-                    vmin = vmin, vmax = vmax)
+                          vmin = vmin, vmax = vmax)
         
         plt.colorbar(a, ax=ax)
         plt.show()

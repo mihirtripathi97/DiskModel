@@ -1,0 +1,13 @@
+imagename = 'uid___A002_b_6.cal.l1489_irs.spw_1_7.line.cube.clean.c_baseline_0.image.pbcor.Regridded.Smoothened.fits'
+outfile   = 'l1489_b6_symmetric_chnl_line_cube_clean_c_baseline.image.pbcor.Regridded.Smoothned.fits'
+box       = ''
+region    = ''
+chans     = '16~64'
+stokes    = ''
+mask      = ''
+dropdeg   = False
+verbose   = True
+overwrite = False
+stretch   = False
+keepaxes  = []
+#imsubimage( imagename='uid___A002_b_6.cal.l1489_irs.spw_1_7.line.cube.clean.c_baseline_0.image.pbcor.Regridded.Smoothened.fits',outfile='l1489_b6_symmetric_chnl_line_cube_clean_c_baseline.image.pbcor.Regridded.Smoothned.fits',box='',region='',chans='16~64',stokes='',mask='',dropdeg=False,verbose=True,overwrite=False,stretch=False,keepaxes=[] )
