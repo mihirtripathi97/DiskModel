@@ -335,7 +335,7 @@ def main():
     # --------- input ---------
     # model params
     Ic, rc, beta, gamma = [1., 600., 1.1, 0.9] # rc 
-    inc = 78.
+    inc = 73.
     pa = 0.
     ms = 1.6
     vsys = 7.3
