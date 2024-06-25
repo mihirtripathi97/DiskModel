@@ -267,12 +267,11 @@ class SSDisk:
             axes.set_xlim(0.1, 3.)
             axes.set_ylim(0.1,20)
             axes.set_yscale('log')
-            axes.set_xscale("log")
+            axes.set_ylabel('Iv')
+            axes.set_xscale("R (arcsec)")
             axes.grid()
             plt.show()
             plt.close()
-
-
 
         return I_int.reshape(xx_sky.shape), vlos.reshape(xx_sky.shape)
 

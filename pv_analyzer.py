@@ -363,6 +363,7 @@ class pv_analyze:
             # If true, offset (radial distance from star) will be the x axis
             x_offset=True,
             vsys=self.v_sys,  # systemic velocity
+            ccolor='lime',
             # plot vertical center (systemic velocity)
             ln_var=True,
             # plot horizontal center (zero offset)
