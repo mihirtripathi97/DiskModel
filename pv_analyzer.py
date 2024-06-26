@@ -124,7 +124,7 @@ class pv_analyze:
                                 It provides angular distance `r` at which one should expect the emission comming from material rotating at
                                 keplerian velocities. More generally, a function that returns r coordinates in units of AU
                                 wrt center of disk for given velocity channels.
-                                Default - a inverse kepler function GM/(v_rot**2) --> r
+                                Default - a inverse kepler function GM/((v_rot*sin(i))**2) --> r
 
                                 If mode = 'vals', then a list of lists, specifying r and v values in following order
                                 [r_rs (au)] , [v_rs (kmps)], [r_bs (au)], [v_bs (kmps)]
@@ -339,7 +339,8 @@ class pv_analyze:
 
         return data_cube
 
-    def plot_pv(self, plot_curve: bool = False, base_ctr_lvl = None, **kwargs):
+    def plot_pv(self, plot_curve: bool = False, base_ctr_lvl = None,
+                cmap=None, cbarlim=None, **kwargs):
         """
         Plots PV diagram and overplots curve points if `plot_curve` is True. Returns the fig, axes object.
         """
@@ -347,13 +348,24 @@ class pv_analyze:
 
         if base_ctr_lvl is not None:
             self.rms = base_ctr_lvl
+
+        if cmap is None:
+            cmap = 'inferno'
         
+        if cbarlim is None:
+            vmin = 0
+            vmax = np.max(self.pv_data)
+        
+        else:
+            vmin = cbarlim[0]
+            vmax = cbarlim[1]
+
         canvas = AstroCanvas((1, 1))
         pv_plot = canvas.pvdiagram(
             self.pv,
             vrel=True,
             color=True,
-            cmap="inferno",
+            cmap=cmap,
             vmin=0,
             vmax=np.max(self.pv_data),
             contour=True,
@@ -369,7 +381,7 @@ class pv_analyze:
             # plot horizontal center (zero offset)
             ln_hor=True,
             cbaroptions=("right", "3%", "3%"),
-            cbarlabel=r"(Jy beam$^{-1})$",
+            cbarlabel=r"Jy (beam$^{-1}$)",
             colorbar=True,
         )
 

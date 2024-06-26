@@ -264,8 +264,8 @@ class SSDisk:
             fig, axes = plt.subplots()
             axes.scatter(r/(140.), I_int, marker = 'o', s = 2.)
             print("plotting intensity")
-            axes.set_xlim(0.1, 3.)
-            axes.set_ylim(0.1,20)
+            #axes.set_xlim(0.1, 3.)
+            #axes.set_ylim(0.1,20)
             axes.set_yscale('log')
             axes.set_ylabel('Iv')
             axes.set_xlabel("R (arcsec)")
@@ -325,7 +325,7 @@ class SSDisk:
 
         # line broadening
         if linewidth is not None:
-            gaussbeam = np.exp(- 0.5 * ( (v - self.vsys) /(linewidth / 2.35))**2.)
+            gaussbeam = np.exp( -( (v - v[nv//2 - 1 + nv%2]) /(linewidth))**2.)
             I_cube = convolve(I_cube, np.array([[gaussbeam]]).T, mode='same')
 
         return I_cube, I_int
@@ -371,7 +371,7 @@ def main():
 
 
     write_fits(model_cube = modelcube, modelcube_header= cube.header,
-               fits_name = 'L1489irs_model_i_'+str(inc)+'without_beam_conv.fits')
+               fits_name = 'L1489irs_model_i_'+str(inc)+'without_beam_conv_26_6.fits')
 
 
     print(np.shape(modelcube))
