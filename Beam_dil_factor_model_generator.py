@@ -337,11 +337,11 @@ def main():
     inc = 73.
     pa = 0.
     ms = 1.6
-    vsys = 7.27
+    vsys = 7.33
     dist = 140.
 
     # Observed disk cube
-    f_cube = 'l1489_b6_symmetric_chnl_line_cube_clean_c_baseline.image.pbcor.Regridded.Smoothned.fits' 
+    f_cube = 'l1489_b6_symmetric_chnl_symettric_axis_line_cube_clean_c_baseline.image.pbcor.Regridded.Smoothned.fits' 
 
     # uid___A002_b_6.cal.l1489_irs.spw_1_7.line.cube.clean.c_baseline_0.image.pbcor.Regridded.Smoothened.fits
     
@@ -352,10 +352,18 @@ def main():
     # read fits file
     cube = Imfits(f_cube)
     # shift coordinate center (the mesh grid will now bw centerd on pixel at this location)
-    cube.shift_coord_center(coord_center = '04h04m43.07s 26d18m56.24s')
-    cube.trim_data([-9., 9.,], [-9.,9.] ) # , [2.7, 12.]
+    cube.shift_coord_center(coord_center = '04h04m43.073s 26d18m56.24s')
+    cube.trim_data([-9., 9.,], [-9.,9.] )
     # trim_data([RA range in arcsec offset from center], [Dec range], [offset velocity range in kmps])
     
+    new_resolution = 300 # For example, create a 100x100 grid
+
+    # Create new arrays with more points within the same range
+    x_new = np.linspace(np.min(cube.xx), np.max(cube.xx), new_resolution)
+    y_new = np.linspace(np.min(cube.yy), np.max(cube.yy), new_resolution)
+
+    cube.xx, cube.yy = np.meshgrid(x_new, y_new)
+    print(len(cube.xx))
     xx = cube.xx * 3600. * dist # in au
     yy = cube.yy * 3600. * dist # in au
     v = cube.vaxis # km/s
@@ -369,15 +377,14 @@ def main():
                                               'ring_width' : 60.})
     vmin, vmax = np.nanmin(modelcube), np.nanmax(modelcube)
 
-
     write_fits(model_cube = modelcube, modelcube_header= cube.header,
-               fits_name = 'L1489irs_model_i_'+str(inc)+'without_beam_conv_26_6.fits')
+               fits_name = 'L1489irs_model_i_'+str(inc)+'without_beam_conv.fits')
 
 
     print(np.shape(modelcube))
 
     # Let's get PV plot out of the modelcube  
-    pv_model = np.squeeze(modelcube[:, :, 150])
+    pv_model = np.squeeze(modelcube[:, :, int(new_resolution/2.)])
 
 
     plot_int_map = True
@@ -434,7 +441,7 @@ def main():
                     #ylim = [-8.5,6.5],
                     clevels = np.array([3,7,10,15,25,35,45])*rms_pv,
                     x_offset = True, # If true, offset (radial distance from star) will be the x axis
-                    vsys = 7.33, # systemic velocity in kmps
+                    vsys = vsys, # systemic velocity in kmps
                     ln_var = True, # plot vertical center (systemic velocity)
                     ln_hor = True, # plot horizontal center (zero offset)
                     colorbar = False 
@@ -443,7 +450,6 @@ def main():
         X, Y = np.meshgrid(xx[0,:]/(dist), v-7.33)
         ax = canvas.axes[0]
         
-
         pv_model[pv_model<0] = 1.e-18
         vmin = np.nanmin(pv_model)
         vmax = np.nanmax(pv_model)

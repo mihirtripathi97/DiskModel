@@ -366,8 +366,8 @@ class pv_analyze:
             vrel=True,
             color=True,
             cmap=cmap,
-            vmin=0,
-            vmax=np.max(self.pv_data),
+            vmin=vmin,
+            vmax=vmax,
             contour=True,
             clip=0.0000000,
             ylim=[-8.5, 6.5],
@@ -375,7 +375,7 @@ class pv_analyze:
             # If true, offset (radial distance from star) will be the x axis
             x_offset=True,
             vsys=self.v_sys,  # systemic velocity
-            ccolor='lime',
+            ccolor='grey',
             # plot vertical center (systemic velocity)
             ln_var=True,
             # plot horizontal center (zero offset)
