@@ -170,7 +170,7 @@ class pv_analyze:
 
             else:
                 # use 2D keplerian velocity profile
-                r_au_rs = (self.G_grav*self.M_star*self.M_sun/ (self.v_rot_redshifted* 1.0e3/ np.sin(self.inclination * np.pi / 180.0))** 2) / 1.496e11
+                r_au_rs = (self.G_grav*self.M_star*self.M_sun/(self.v_rot_redshifted* 1.0e3/ np.sin(self.inclination * np.pi / 180.0))** 2) / 1.496e11
                 r_au_bs = -1.0 * (self.G_grav* self.M_star* self.M_sun/ (self.v_rot_blueshifted* 1.0e3/ np.sin(self.inclination * np.pi / 180.0))** 2) / 1.496e11
         
         # if coordinates of curve is supplied
@@ -188,7 +188,10 @@ class pv_analyze:
         self.r_as_rs = r_au_rs / self.distance_pc
         # (for points in blueshifted side) radial distance from star in arcsec
         self.r_as_bs = r_au_bs / self.distance_pc
+        
 
+        #print("max x axis",self.x_axis.max())
+        #print("min x axis", self.x_axis.min())
         # dropping r larger then rmax of pv image and corresponding Vs as well
         self.v_rot_redshifted, self.r_as_rs = (
             self.v_rot_redshifted[self.r_as_rs <= self.x_axis.max()],
