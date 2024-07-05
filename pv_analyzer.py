@@ -170,8 +170,8 @@ class pv_analyze:
 
             else:
                 # use 2D keplerian velocity profile
-                r_au_rs = (self.G_grav*self.M_star*self.M_sun/(self.v_rot_redshifted* 1.0e3/ np.sin(self.inclination * np.pi / 180.0))** 2) / 1.496e11
-                r_au_bs = -1.0 * (self.G_grav* self.M_star* self.M_sun/ (self.v_rot_blueshifted* 1.0e3/ np.sin(self.inclination * np.pi / 180.0))** 2) / 1.496e11
+                r_au_rs = (self.G_grav*self.M_star*self.M_sun/(self.v_rot_redshifted* 1.0e3/ np.sin(np.deg2rad(self.inclination)))** 2) / 1.496e11
+                r_au_bs = -1.0 * (self.G_grav* self.M_star* self.M_sun/ (self.v_rot_blueshifted* 1.0e3/ np.sin(np.deg2rad(self.inclination)))** 2) / 1.496e11
         
         # if coordinates of curve is supplied
         elif mode.lower() == 'vals':

@@ -1,0 +1,2 @@
+#CRTFv0 CASA Region Text Format version 0
+line [[04:04:43.07209, +026.18.48.2255], [04:04:43.07209, +026.19.04.2255]] coord=J2000, corr=[I], linewidth=2, linestyle=-, symsize=1, symthick=1, color=2ee6d6, font=Helvetica, fontsize=10, fontstyle=normal, usetex=false, label="PV_cut_line_self_Cal_ctr_PA180", labelcolor=2ee6d6, labelpos=top

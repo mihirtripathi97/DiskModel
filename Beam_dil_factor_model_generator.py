@@ -61,7 +61,6 @@ def ssdisk_gaussian_ring(r, theta, Ic, rc, gamma, beta = None, ring_height = Non
 
     beta_p = gamma if beta is None else beta # - beta = - gamma - q
 
-    profile_ssdisk = Ic * ((r/rc)**(- beta_p))*((np.exp(-(r/rc)))**(2. - gamma)) 
     profile_gauss_out = Ic*ring_height*np.exp(-((r-ring_loc)**2/(2*ring_width**2)))
     profile_gauss_gap = -Ic*3*np.exp(-((r-160.)**2/(2*(30.**2))))
     profile_gauss_in = Ic*(ring_height+7.)*np.exp(-((r-60.)**2/(2*(90.**2))))
@@ -363,7 +362,7 @@ def main():
     y_new = np.linspace(np.min(cube.yy), np.max(cube.yy), new_resolution)
 
     cube.xx, cube.yy = np.meshgrid(x_new, y_new)
-    print(len(cube.xx))
+
     xx = cube.xx * 3600. * dist # in au
     yy = cube.yy * 3600. * dist # in au
     v = cube.vaxis # km/s
@@ -447,7 +446,7 @@ def main():
                     colorbar = False 
                     )
         
-        X, Y = np.meshgrid(xx[0,:]/(dist), v-7.33)
+        X, Y = np.meshgrid(xx[0,:]/(dist), v-vsys)
         ax = canvas.axes[0]
         
         pv_model[pv_model<0] = 1.e-18
