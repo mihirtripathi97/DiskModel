@@ -334,7 +334,7 @@ def main():
     # model params
     Ic, rc, beta, gamma = [1., 600., 1.5, 1.] # rc 
     inc = 73.
-    pa = 0.
+    pa = -54.
     ms = 1.6
     vsys = 7.33
     dist = 140.
@@ -352,7 +352,7 @@ def main():
     cube = Imfits(f_cube)
     # shift coordinate center (the mesh grid will now bw centerd on pixel at this location)
     cube.shift_coord_center(coord_center = '4h04m43.0720900140s 26d18m56.2255001781s')
-    cube.trim_data([-9., 9.,], [-9.,9.] )
+    #cube.trim_data([-9., 9.,], [-9.,9.] )
     # trim_data([RA range in arcsec offset from center], [Dec range], [offset velocity range in kmps])
     
     new_resolution = 300 # For example, create a 100x100 grid
@@ -378,7 +378,7 @@ def main():
     vmin, vmax = np.nanmin(modelcube_with_beam), np.nanmax(modelcube_with_beam)
 
     write_fits(model_cube = modelcube_with_beam, modelcube_header= cube.header,
-               fits_name = 'L1489irs_model_i_'+str(inc)+'with_beam_conv.fits')
+               fits_name = 'L1489irs_model_gr_i_'+str(inc)+'with_beam_conv_comparison.fits')
 
     modelcube_without_beam, model_int_map_without_beam = model.build_cube(xx, yy, v, None, 0.077, dist, 
                                  radial_profile = None, 
@@ -387,7 +387,7 @@ def main():
 
 
     write_fits(model_cube = modelcube_without_beam, modelcube_header= cube.header,
-               fits_name = 'L1489irs_model_i_'+str(inc)+'without_beam_conv.fits')
+               fits_name = 'L1489irs_model_gr_i_'+str(inc)+'without_beam_conv_comparision.fits')
     
     modelcube_without_beam_nolinewidth, model_int_map_without_beam_nolinewidth = model.build_cube(xx, yy, v, None, None, dist, 
                                 radial_profile = None, 

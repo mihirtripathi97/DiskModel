@@ -263,11 +263,11 @@ class SSDisk:
                                        self.gamma, self.beta, **rp_kwargs)
 
         
-
+        plot_intensity_radii=False
         if plot_intensity_radii:
 
             fig, axes = plt.subplots()
-            axes.scatter(r/(140.), I_int, marker = 'o', s = 2.)
+            axes.scatter(r, I_int, marker = 'o', s = 2.)
             print("plotting intensity")
             #axes.set_xlim(0.1, 3.)
             #axes.set_ylim(0.1,20)
@@ -304,6 +304,7 @@ class SSDisk:
         I_int, vlos = self.build(xx, yy, intensity_function = radial_profile, 
                                  rp_kwargs = rp_kwargs)
         
+
         # vaxes
         ny, nx = xx.shape
         nv = len(v)
@@ -322,13 +323,16 @@ class SSDisk:
             beam[1] * dist / 2.35, beam[0] * dist / 2.35, beam[2], peak=True)
             gaussbeam /= np.sum(gaussbeam)
 
-            I_cube /= np.abs((xx[0,0] - xx[0,1])*(yy[1,0] - yy[0,0])) # per pixel to per arcsec^2
-            I_cube *= np.pi/(4.*np.log(2.)) * beam[0] * beam[1] # per arcsec^2 --> per beam
 
+            I_cube /= np.abs((xx[0,0] - xx[0,1])*(yy[1,0] - yy[0,0])) # per pixel to per AU^2
+            I_cube *= (np.pi/(4.*np.log(2.))) * beam[0] * beam[1]*dist*dist # per AU^2 --> per beam
+            
             # beam convolution
             I_cube = np.where(np.isnan(I_cube), 0., I_cube)
             I_cube = convolve(I_cube, np.array([gaussbeam]), mode='same')
+        
 
+        
         # line broadening
         if linewidth is not None:
             gaussbeam = np.exp( -( (v - v[nv//2 - 1 + nv%2]) /(linewidth))**2.)
@@ -359,65 +363,49 @@ def main():
     cube = Imfits(f_cube)
     # shift coordinate center (the mesh grid will now bw centerd on pixel at this location)
     cube.shift_coord_center(coord_center = '4h04m43.0720900140s 26d18m56.2255001781s')
-    cube.trim_data([-9., 9.,], [-9.,9.] )
-    cube.trim_data([-4., 4.,], [-4.,4.] )
+    #cube.trim_data([-9., 9.,], [-9.,9.] )
+    cube.trim_data([-6., 6.,], [-6.,6.] )
     # trim_data([RA range in arcsec offset from center], [Dec range], [offset velocity range in kmps])
     
-    new_resolution = 1200 
+    new_resolution = 1200
 
     # Create new arrays with more points within the same range
-    x_new = np.linspace(np.min(cube.xx), np.max(cube.xx), new_resolution)
-    y_new = np.linspace(np.min(cube.yy), np.max(cube.yy), new_resolution)
+    x_new = np.linspace(np.min(cube.xx), np.max(cube.xx), new_resolution, endpoint=True)
+    y_new = np.linspace(np.min(cube.yy), np.max(cube.yy), new_resolution, endpoint=True)
 
     cube.xx, cube.yy = np.meshgrid(x_new, y_new)
 
-    xx = cube.xx * 3600. * dist # in au
-    yy = cube.yy * 3600. * dist # in au
+
+    xx = cube.xx * 3600. * dist # converts cube coordinates (deg) to disk coords in au
+    yy = cube.yy * 3600. * dist # converts cube coordinates (deg) to disk coords in au
     v = cube.vaxis # km/s
 
     # model
     model = SSDisk(Ic, rc, beta, gamma, inc, pa, ms, vsys)
-    # xx, yy, v, beam = None, linewidth = 0., dist = 140., radial_profile = None, **rp_kwargs
+
+    
     beam = [0.6,0.6,0]
+    
     modelcube_with_beam, model_int_map_with_beam = model.build_cube(xx, yy, v, beam, 0.077, dist, 
-                                 radial_profile = None, 
-                                 rp_kwargs = {'ring_height' : 7., 'ring_loc' : 290., 
-                                              'ring_width' : 60.})
-
-
-    #write_fits(model_cube = modelcube_with_beam, modelcube_header= cube.header,
-               #fits_name = 'L1489irs_model_i_'+str(inc)+'with_beam_conv.fits')
+                                 radial_profile = None)
 
     modelcube_without_beam, model_int_map_without_beam = model.build_cube(xx, yy, v, None, 0.077, dist, 
-                                 radial_profile = None, 
-                                 rp_kwargs = {'ring_height' : 7., 'ring_loc' : 290., 
-                                              'ring_width' : 60.})
+                                 radial_profile = None)
 
-    modelcube_without_beam = (modelcube_without_beam/np.abs((xx[0,0] - xx[0,1])*(yy[1,0] - yy[0,0])))* (np.pi/(4.*np.log(2.)) * beam[0] * beam[1])
-    #write_fits(model_cube = modelcube_without_beam, modelcube_header= cube.header,
-               #fits_name = 'L1489irs_model_i_'+str(inc)+'without_beam_conv.fits')
-    
-    modelcube_without_beam_nolinewidth, model_int_map_without_beam_nolinewidth = model.build_cube(xx, yy, v, None, None, dist, 
-                                radial_profile = None, 
-                                rp_kwargs = {'ring_height' : 7., 'ring_loc' : 290., 
-                                            'ring_width' : 60.})
+    # Matching the units of the two cubes      
+    modelcube_without_beam /= np.abs((xx[0,0] - xx[0,1])*(yy[1,0] - yy[0,0])) # per pixel to per AU^2
+    modelcube_without_beam *= (np.pi/(4.*np.log(2.))) * beam[0] * beam[1]*dist*dist # per AU^2 --> per beam
 
-
-    #write_fits(model_cube = modelcube_without_beam_nolinewidth, 
-              # modelcube_header= cube.header,
-               #fits_name = 'L1489irs_model_i_'+str(inc)+'without_beam_conv_nolinewidth.fits')
-
-    print(np.shape(modelcube_without_beam))
 
 
     # Let's get PV plot out of the modelcube  
-    pv_model_without_beam = np.squeeze(modelcube_without_beam[:, :, int(new_resolution/2.)])
-    pv_model_with_beam = np.squeeze(modelcube_with_beam[:, :, int(new_resolution/2.)])
+    pv_model_without_beam = np.squeeze(modelcube_without_beam[:, :, int((new_resolution/2.))])
+    pv_model_with_beam = np.squeeze(modelcube_with_beam[:, :, int((new_resolution/2.))])
 
 
-    plot_int_map = True
+    plot_int_map = False
 
-    if plot_int_map == False:
+    if plot_int_map == True:
         
         fig, axes = plt.subplots(2)
 
@@ -459,9 +447,6 @@ def main():
 
         pv_obs = Imfits(f_PV, pv=True)
 
-        #print("Shape of observed pv", np.shape(pv_obs.data))
-        rms_pv = pv_obs.estimate_noise()
-
         pv_model_with_beam[pv_model_with_beam<0] = 1.e-18
         vmin_wb = np.nanmin(pv_model_with_beam)
         vmax_wb = np.nanmax(pv_model_with_beam)
@@ -474,8 +459,8 @@ def main():
         v_rot = v-vsys
         v_rs = v_rot[v_rot>0]
         v_bs = v_rot[v_rot<0]
-        r_rs = inv_vkep(v= v_rs/(np.sin(np.deg2rad(73.))), ms=1.6)/dist  # /(np.sin(np.deg2rad(73.)))
-        r_bs = -inv_vkep(v= v_bs/(np.sin(np.deg2rad(73.))), ms=1.6)/dist # /(np.sin(np.deg2rad(73.)))
+        r_rs = inv_vkep(v= v_rs/(np.sin(np.deg2rad(inc))), ms=1.6)/dist  # /(np.sin(np.deg2rad(73.)))
+        r_bs = -inv_vkep(v= v_bs/(np.sin(np.deg2rad(inc))), ms=1.6)/dist # /(np.sin(np.deg2rad(73.)))
 
         v_rs, r_rs = v_rs[r_rs<12.], r_rs[r_rs<12]
         v_bs, r_bs = v_bs[r_bs>-12], r_bs[r_bs>-12]
@@ -490,65 +475,35 @@ def main():
 
         
         canvas = AstroCanvas((1,2))
-
-        '''
-        pv_plot = canvas.pvdiagram(pv_obs,
-                    vrel = True,
-                    color = False,
-                    ccolor = 'green',
-                    vmin = -2.0,
-                    vmax = 12.0,
-                    contour = True,
-                    clip = 0.0000000,
-                    #ylim = [-8.5,6.5],
-                    clevels = np.array([3,7,10,15,25,35,45])*rms_pv,
-                    x_offset = True, # If true, offset (radial distance from star) will be the x axis
-                    vsys = vsys, # systemic velocity in kmps
-                    ln_var = True, # plot vertical center (systemic velocity)
-                    ln_hor = True, # plot horizontal center (zero offset)
-                    colorbar = False 
-                    )
-        '''
-
-
-        X, Y = np.meshgrid(-xx[0,:]/(dist), -v+vsys)
-        
-        
-        ax1 = canvas.axes[0]
     
-        #print(vmin, vmax)
-        #a = ax1.pcolormesh(X, Y, pv_model_without_beam, shading='auto', cmap='inferno', rasterized=True,
-        #                  vmin = vmin_wob, vmax = vmax_wob)
-        print(vmin_wob)
-        print(vmax_wob)
-        norm1 = Normalize(vmin=0, vmax=0.1)
-        #norm2 = Normalize(vmin=0, vmax=1)
-        a = ax1.imshow(pv_model_without_beam,  aspect='equal', cmap='inferno',
-                       extent=[xx.min()/dist, xx.max()/dist, v.min()-vsys, v.max()-vsys], origin='lower',
+        ax1 = canvas.axes[0]
+
+        norm1 = Normalize(vmin=vmin_wob, vmax=vmax_wob*1e-3)
+        norm2 = Normalize(vmin=vmin_wb, vmax=vmax_wb)
+        a = ax1.imshow(np.flip(pv_model_without_beam, axis=0),  aspect='equal', cmap='inferno',
+                       extent=[xx.min()/dist, xx.max()/dist, v.min()-vsys, v.max()-vsys], 
+                       origin='lower',
                        norm=norm1)
         ax1.axvline(x=0)
         ax1.axhline(y=0)
-        ax1.scatter(-r_rs, v_rs, marker='o', s=5., c='r')
-        ax1.scatter(-r_bs, v_bs, marker='o', s=5., c='b')
+        ax1.scatter(r_rs, v_rs, marker='o', s=5., c='r')
+        ax1.scatter(r_bs, v_bs, marker='o', s=5., c='b')
 
-        ax1.scatter(-xx[0][r_idx_rs]/dist, v[v_idx_rs]-vsys, marker='*', s=15., c='r')
-        ax1.scatter(-xx[0][r_idx_bs]/dist, v[v_idx_bs]-vsys, marker='*', s=15., c= 'b')
+        ax1.scatter(xx[0][r_idx_rs]/dist, v[v_idx_rs]-vsys, marker='*', s=15., c='r')
+        ax1.scatter(xx[0][r_idx_bs]/dist, v[v_idx_bs]-vsys, marker='*', s=15., c= 'b')
 
-        canvas.fig.colorbar(a, ax=ax1, )
+        canvas.fig.colorbar(a, ax=ax1)
 
 
         ax2 = canvas.axes[1]
-        #b = ax2.pcolormesh(X, Y, pv_model_with_beam, shading='auto', cmap='inferno', rasterized=True,
-            #vmin = vmin_wb, vmax = vmax_wb)
-
-        b = ax2.imshow(pv_model_with_beam,  aspect='equal', cmap='inferno',
-                extent=[xx.min()/dist, xx.max()/dist, v.min()-vsys, v.max()-vsys], origin='lower', norm=norm1)
+        b = ax2.imshow(np.flip(pv_model_with_beam, axis=1),  aspect='equal', cmap='inferno',
+                extent=[xx.min()/dist, xx.max()/dist, v.min()-vsys, v.max()-vsys], origin='lower', norm=norm2)
         ax2.axvline(x=0)
         ax2.axhline(y=0)
-        ax2.scatter(-r_rs, v_rs, marker='o', s=5., c='r')
-        ax2.scatter(-r_bs, v_bs, marker='o', s=5., c='b')
-        ax2.scatter(-xx[0][r_idx_rs]/dist, v[v_idx_rs]-vsys, marker='*', s=15., c='r')
-        ax2.scatter(-xx[0][r_idx_bs]/dist, v[v_idx_bs]-vsys, marker='*', s=15., c= 'b')
+        ax2.scatter(r_rs, v_rs, marker='o', s=5., c='r')
+        ax2.scatter(r_bs, v_bs, marker='o', s=5., c='b')
+        ax2.scatter(xx[0][r_idx_rs]/dist, v[v_idx_rs]-vsys, marker='*', s=15., c='r')
+        ax2.scatter(xx[0][r_idx_bs]/dist, v[v_idx_bs]-vsys, marker='*', s=15., c= 'b')
 
         canvas.fig.colorbar(b, ax=ax2)
         plt.show()
@@ -557,61 +512,64 @@ def main():
 
     if get_beam_factor:
         
-        
-        #plt.plot(xx[0][:],pv_model_with_beam[29][:])
-        #plt.scatter(xx[0][-583],pv_model_with_beam[29][-583], label='with_beam')
-        #plt.scatter(xx[0][-583],pv_model_with_beam[29][-583], label='without_beam')
-        #plt.legend()
-        #plt.show()
         pv_intensity_wth_beamc_rs = pv_model_with_beam[v_idx_rs,-np.array(r_idx_rs, dtype=int)]
         pv_intensity_wth_beamc_bs = pv_model_with_beam[v_idx_bs,-np.array(r_idx_bs, dtype=int)]
 
         pv_intensity_wthot_beamc_rs = pv_model_without_beam[v_idx_rs,-np.array(r_idx_rs, dtype=int)]
         pv_intensity_wthot_beamc_bs = pv_model_without_beam[v_idx_bs,-np.array(r_idx_bs, dtype=int)]
 
-
-    fig, axs = plt.subplots()
-
-    pv_intensity_wthot_beamc_rs_oint = ssdisk(r=xx[0][r_idx_rs]/dist,
-                                              Ic=1.,rc=600., beta=1.5, gamma=1.)
-    pv_intensity_wthot_beamc_rs_oint = pv_intensity_wthot_beamc_rs_oint/(np.abs((xx[0,0]-xx[0,1])*(yy[1,0]-yy[0,0])))*(np.pi/(4.*np.log(2.)) * beam[0] * beam[1])
-    print(1/(np.abs((xx[0,0]-xx[0,1])*(yy[1,0]-yy[0,0])))*(np.pi/(4.*np.log(2.)) * beam[0] * beam[1]))
-    pv_intensity_wthot_beamc_bs_oint = ssdisk(r=xx[0][r_idx_bs]/dist,
-                                            Ic=1.,rc=600., beta=1.5, gamma=1.)
-    #pv_intensity_wthot_beamc_bs_oint = pv_intensity_wthot_beamc_bs_oint/(np.abs((xx[0,0]-xx[0,1])*(yy[1,0]-yy[0,0])))*(np.pi/(4.*np.log(2.)) * beam[0] * beam[1])
-
-    axs.plot(xx[0][r_idx_rs]/dist, pv_intensity_wthot_beamc_rs_oint, label='without_beam_rs_orig_int', c='magenta', ls = '-')
-    axs.plot(xx[0][r_idx_rs]/dist, pv_intensity_wthot_beamc_rs, label='without_beam_rs', c='r', ls = '-')
-    axs.plot(xx[0][r_idx_rs]/dist, pv_intensity_wth_beamc_rs, label='with_beam_rs', c='r', ls = '--')
-    
-    axs.plot(xx[0][r_idx_rs]/dist, pv_intensity_wthot_beamc_bs_oint, label='without_beam_rs_orig_int', c='c', ls = '-')
-    axs.plot(-xx[0][r_idx_bs]/dist, pv_intensity_wthot_beamc_bs, label='without_beam_bs', c='b', ls = '-')
-    axs.plot(-xx[0][r_idx_bs]/dist, pv_intensity_wth_beamc_bs, label='with_beam_bs', c='b', ls = '--')
+        fig, axs = plt.subplots()
 
 
-    axs.legend(prop={'size': 6})
-    axs.grid()
-    axs.set_yscale('log')
-    plt.show()
 
-    red_factor = np.divide(pv_intensity_wth_beamc_rs, pv_intensity_wthot_beamc_rs)
-    red_factor_1 = np.divide(pv_intensity_wth_beamc_rs, pv_intensity_wthot_beamc_rs_oint)
+        pv_intensity_wthot_beamc_rs_oint = ssdisk(r=xx[0][r_idx_rs],
+                                                Ic=1.,rc=600., beta=1.5, gamma=1.)
+        pv_intensity_wthot_beamc_bs_oint = ssdisk(r=-xx[0][r_idx_bs],
+                                                Ic=1.,rc=600., beta=1.5, gamma=1.)
+        
+        cf = ((np.pi/(4.*np.log(2.))) * beam[0] * beam[1]*dist*dist)/np.abs((xx[0,0] - xx[0,1])*(yy[1,0] - yy[0,0])) # per pixel to per AU^2
+        pv_intensity_wthot_beamc_bs_oint *= cf
+        pv_intensity_wthot_beamc_rs_oint *= cf
 
-    blue_factor = np.divide(pv_intensity_wth_beamc_bs, pv_intensity_wthot_beamc_bs)
-    blue_factor_1 = np.divide(pv_intensity_wth_beamc_bs, pv_intensity_wthot_beamc_bs_oint)
+        axs.plot(xx[0][r_idx_rs]/dist, pv_intensity_wthot_beamc_rs_oint, label='without_beam_rs_orig_int', c='magenta', ls = '--')
+        axs.plot(xx[0][r_idx_rs]/dist, pv_intensity_wthot_beamc_rs, label='without_beam_rs', c='r', ls = '-', marker='o')
+        axs.plot(xx[0][r_idx_rs]/dist, pv_intensity_wth_beamc_rs, label='with_beam_rs', c='r', ls = '--', marker='o')
+        
 
-    fig, axs = plt.subplots()
-    axs.scatter(xx[0][r_idx_rs]/dist, red_factor, label='ratio_rs', c='r', ls = '-')
-    axs.scatter(xx[0][r_idx_rs]/dist, red_factor_1, label='ratio_rs_oint', c='magenta', ls = '-')
-    axs.scatter(-xx[0][r_idx_bs]/dist, blue_factor, label='ratio_bs', c='b', ls = '--')
-    axs.scatter(xx[0][r_idx_rs]/dist, blue_factor_1, label='ratio_bs_oint', c='magenta', ls = '-')
+        axs.plot(-xx[0][r_idx_bs]/dist, pv_intensity_wthot_beamc_bs_oint, label='without_beam_bs_orig_int', c='c', ls = '-')
+        axs.plot(-xx[0][r_idx_bs]/dist, pv_intensity_wthot_beamc_bs, label='without_beam_bs', c='b', ls = '-', marker='o')
+        axs.plot(-xx[0][r_idx_bs]/dist, pv_intensity_wth_beamc_bs, label='with_beam_bs', c='b', ls = '--', marker='o')
 
-    axs.legend()
-    axs.set_yscale('log')
-    axs.grid()
-    plt.show()
 
-    
+        axs.legend(prop={'size': 6})
+        axs.grid()
+        axs.set_yscale('log')
+        plt.show()
+
+
+        red_factor = np.divide(pv_intensity_wth_beamc_rs, pv_intensity_wthot_beamc_rs)
+        red_factor_1 = np.divide(pv_intensity_wth_beamc_rs, pv_intensity_wthot_beamc_rs_oint)
+
+        blue_factor = np.divide(pv_intensity_wth_beamc_bs, pv_intensity_wthot_beamc_bs)
+        blue_factor_1 = np.divide(pv_intensity_wth_beamc_bs, pv_intensity_wthot_beamc_bs_oint)
+
+        fig, axs = plt.subplots()
+        axs.scatter(xx[0][r_idx_rs]/dist, red_factor, label='ratio_rs', c='r', ls = '-')
+        axs.scatter(xx[0][r_idx_rs]/dist, red_factor_1, label='ratio_rs_oint', c='magenta', ls = '-')
+        axs.scatter(xx[0][r_idx_bs]/dist, blue_factor, label='ratio_bs', c='b', ls = '--')
+        axs.scatter(xx[0][r_idx_bs]/dist, blue_factor_1, label='ratio_bs_oint', c='c', ls = '-')
+
+        axs.legend()
+        axs.set_yscale('log')
+        axs.grid()
+        plt.show()
+
+    fit_red_factor=True
+
+    if fit_red_factor:
+        print("WIP")
+
+
 
 
 

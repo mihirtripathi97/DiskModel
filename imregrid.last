@@ -1,0 +1,11 @@
+imagename     = 'l1489_b6_symmetric_chnl_symettric_axis_line_cube_clean_c_baseline.image.pbcor.Regridded.Smoothned.fits'
+template      = 'get'
+output        = 'l1489_b6_sym_along_ctr_600_pix'
+asvelocity    = True
+axes          = [0, 1]
+interpolation = 'linear'
+decimate      = 10
+replicate     = False
+overwrite     = False
+shape         = [600, 600, 49, 1]
+#imregrid( imagename='l1489_b6_symmetric_chnl_symettric_axis_line_cube_clean_c_baseline.image.pbcor.Regridded.Smoothned.fits',template='get',output='l1489_b6_sym_along_ctr_600_pix',asvelocity=True,axes=[0, 1],interpolation='linear',decimate=10,replicate=False,overwrite=False,shape=[600, 600, 49, 1] )

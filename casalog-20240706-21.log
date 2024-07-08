@@ -1,0 +1,82 @@
+2024-07-06 13:25:30	INFO	::casa	
+2024-07-06 13:25:31	INFO	::casa	
+2024-07-06 13:25:31	INFO	::casa	
+2024-07-06 13:25:33	INFO	::casa	
+2024-07-06 13:25:51	INFO	::casa	CASA Version CASALITH 6.4.3.27
+2024-07-06 13:25:52	INFO	::casa	
+2024-07-06 13:25:52	INFO	::casa	Telemetry log file: /home/mihir/.casa/casastats-6.4.3.27-1841081c619b142ca-20240706-132551.log
+2024-07-06 13:25:52	INFO	::casa	Checking telemetry submission interval
+2024-07-06 13:25:52	INFO	::casa	Creating a new telemetry time stamp file./home/mihir/.casa/telemetry-1841081c619b142ca.stamp
+2024-07-06 13:25:52	INFO	::casa	Telemetry submit interval not reached. Not submitting data.
+2024-07-06 13:25:52	INFO	::casa	Next telemetry data submission in: 6 days, 23:59:59.985447
+2024-07-06 13:25:55	INFO	::casa	
+2024-07-06 13:26:01	INFO	::casa	imported analysisUtils version $Id: analysisUtils.py,v 1.5227 2022/03/23 14:24:27 thunter Exp $ from /mnt/c/Users/HP/Desktop/Mihir/CASA_local/casa-6.4.3-27/analysis_scripts/analysisUtils.py
+2024-07-06 13:26:01	INFO	::casa	Using configuration file ~/.casa/config.py
+2024-07-06 13:26:01	INFO	::casa	Using user-supplied startup.py at ~/.casa/startup.py
+2024-07-06 13:26:01	INFO	::casa	
+2024-07-06 13:26:01	INFO	::casa	Checking Measures tables in data repository sub-directory /mnt/c/Users/HP/Desktop/Mihir/CASA_local/casa-6.4.3-27/lib/py/lib/python3.8/site-packages/casadata/__data__/geodetic
+2024-07-06 13:26:01	INFO	::casa	  IERSeop2000 (version date, last date in table (UTC)): 2021/12/15/15:00, 2021/11/14/00:00:00
+2024-07-06 13:26:01	INFO	::casa	  IERSeop97 (version date, last date in table (UTC)): 2021/12/15/15:00, 2021/11/14/00:00:00
+2024-07-06 13:26:02	INFO	::casa	  IERSpredict (version date, last date in table (UTC)): 2022/01/16/15:00, 2022/04/16/00:00:00
+2024-07-06 13:26:02	INFO	::casa	  TAI_UTC (version date, last date in table (UTC)): 2022/01/11/15:00, 2017/01/01/00:00:00
+2024-07-06 13:29:02	INFO	imhead::::casa	##########################################
+2024-07-06 13:29:02	INFO	imhead::::casa	##### Begin Task: imhead             #####
+2024-07-06 13:29:02	INFO	imhead::::casa	imhead( imagename='l1489_b6_symmetric_chnl_symettric_axis_line_cube_clean_c_baseline.image.pbcor.Regridded.Smoothned.fits', mode='summary', hdkey='', hdvalue='', verbose=False )
+2024-07-06 13:29:02	INFO	ImageMetaData::summary	
+2024-07-06 13:29:02	INFO	ImageMetaData::summary+	Image name       : l1489_b6_symmetric_chnl_symettric_axis_line_cube_clean_c_baseline.image.pbcor.Regridded.Smoothned.fits
+2024-07-06 13:29:02	INFO	ImageMetaData::summary+	Object name      :  
+2024-07-06 13:29:02	INFO	ImageMetaData::summary+	Image type       : FITSImage
+2024-07-06 13:29:02	INFO	ImageMetaData::summary+	Image quantity   : Intensity
+2024-07-06 13:29:02	INFO	ImageMetaData::summary+	Pixel mask(s)    : Parent is masked
+2024-07-06 13:29:02	INFO	ImageMetaData::summary+	Region(s)        : None
+2024-07-06 13:29:02	INFO	ImageMetaData::summary+	Image units      : Jy/beam
+2024-07-06 13:29:02	INFO	ImageMetaData::summary+	Restoring Beam   : 0.6 arcsec, 0.6 arcsec, 0 deg
+2024-07-06 13:29:02	INFO	ImageMetaData::summary	
+2024-07-06 13:29:02	INFO	ImageMetaData::summary+	Direction reference : J2000
+2024-07-06 13:29:02	INFO	ImageMetaData::summary+	Spectral  reference : LSRK
+2024-07-06 13:29:02	INFO	ImageMetaData::summary+	Velocity  type      : RADIO
+2024-07-06 13:29:02	INFO	ImageMetaData::summary+	Rest frequency      : 2.1956e+11 Hz
+2024-07-06 13:29:02	INFO	ImageMetaData::summary+	Pointing center     :  04:04:42.850000  +26.18.56.300000
+2024-07-06 13:29:02	INFO	ImageMetaData::summary+	Telescope           : ALMA
+2024-07-06 13:29:02	INFO	ImageMetaData::summary+	Observer            : shinkoyamatsu
+2024-07-06 13:29:02	INFO	ImageMetaData::summary+	Date observation    : 2015/05/24/16:17:34.080000
+2024-07-06 13:29:02	INFO	ImageMetaData::summary+	Telescope position: [2.22514e+06m, -5.44031e+06m, -2.48103e+06m] (ITRF)
+2024-07-06 13:29:02	INFO	ImageMetaData::summary+	
+2024-07-06 13:29:02	INFO	ImageMetaData::summary+	Axis Coord Type      Name             Proj Shape Tile   Coord value at pixel      Coord incr Units
+2024-07-06 13:29:02	INFO	ImageMetaData::summary+	-------------------------------------------------------------------------------------------------- 
+2024-07-06 13:29:02	INFO	ImageMetaData::summary+	0    0     Direction Right Ascension   SIN   300  300  04:04:42.850   199.00   -6.000000e-02 arcsec
+2024-07-06 13:29:02	INFO	ImageMetaData::summary+	1    0     Direction Declination       SIN   300  100 +26.18.56.300   151.00    6.000000e-02 arcsec
+2024-07-06 13:29:02	INFO	ImageMetaData::summary+	2    2     Spectral  Frequency                49    1  2.195611e+11   -16.00 -1.52592971e+05 Hz
+2024-07-06 13:29:02	INFO	ImageMetaData::summary+	                     Velocity                                 -0.96   -16.00    2.083537e-01 km/s
+2024-07-06 13:29:02	INFO	ImageMetaData::summary+	3    1     Stokes    Stokes                    1    1             I
+2024-07-06 13:29:02	INFO	imhead::::casa	Task imhead complete. Start time: 2024-07-06 21:29:01.641797 End time: 2024-07-06 21:29:02.231415
+2024-07-06 13:29:02	INFO	imhead::::casa	##### End Task: imhead               #####
+2024-07-06 13:29:02	INFO	imhead::::casa	##########################################
+2024-07-06 13:30:00	INFO	imregrid::::casa	##########################################
+2024-07-06 13:30:00	INFO	imregrid::::casa	##### Begin Task: imregrid           #####
+2024-07-06 13:30:00	INFO	imregrid::::casa	imregrid( imagename='l1489_b6_symmetric_chnl_symettric_axis_line_cube_clean_c_baseline.image.pbcor.Regridded.Smoothned.fits', template='get', output='l1489_b6_sym_along_ctr_600_pix', asvelocity=True, axes=[0, 1], shape=[600, 600, 49, 1], interpolation='linear', decimate=10, replicate=False, overwrite=False )
+2024-07-06 13:30:01	INFO	imregrid::::casa	Task imregrid complete. Start time: 2024-07-06 21:30:00.424727 End time: 2024-07-06 21:30:00.513377
+2024-07-06 13:30:01	INFO	imregrid::::casa	##### End Task: imregrid             #####
+2024-07-06 13:30:01	INFO	imregrid::::casa	##########################################
+2024-07-06 13:33:26	INFO	imregrid::::casa	##########################################
+2024-07-06 13:33:26	INFO	imregrid::::casa	##### Begin Task: imregrid           #####
+2024-07-06 13:33:26	INFO	imregrid::::casa	imregrid( imagename='l1489_b6_symmetric_chnl_symettric_axis_line_cube_clean_c_baseline.image.pbcor.Regridded.Smoothned.fits', template='l1489_b6_symmetric_chnl_symettric_axis_line_cube_clean_c_baseline.image.pbcor.Regridded.Smoothned.fits', output='l1489_b6_sym_along_ctr_600_pix', asvelocity=True, axes=[0, 1], shape=[600, 600, 49, 1], interpolation='linear', decimate=10, replicate=False, overwrite=False )
+2024-07-06 13:33:26	SEVERE	imregrid::::casa	Task imregrid raised an exception of class TypeError with the following message: Cannot read template image l1489_b6_symmetric_chnl_symettric_axis_line_cube_clean_c_baseline.image.pbcor.Regridded.Smoothned.fits
+2024-07-06 13:33:26	INFO	imregrid::::casa	Task imregrid complete. Start time: 2024-07-06 21:33:26.071727 End time: 2024-07-06 21:33:26.076256
+2024-07-06 13:33:26	INFO	imregrid::::casa	##### End Task: imregrid             #####
+2024-07-06 13:33:26	INFO	imregrid::::casa	##########################################
+2024-07-06 13:33:26	SEVERE	imregrid::::casa	Exception Reported: Error in imregrid: Cannot read template image l1489_b6_symmetric_chnl_symettric_axis_line_cube_clean_c_baseline.image.pbcor.Regridded.Smoothned.fits
+2024-07-06 13:33:26	INFO	imregrid::::casa	Traceback (most recent call last):
+2024-07-06 13:33:26	INFO	imregrid::::casa+	  File "/mnt/c/Users/HP/Desktop/Mihir/CASA_local/casa-6.4.3-27/lib/py/lib/python3.8/site-packages/casashell/private/imregrid.py", line 724, in __call__
+2024-07-06 13:33:26	INFO	imregrid::::casa+	    _return_result_ = _imregrid_t( _invocation_parameters['imagename'],_invocation_parameters['template'],_invocation_parameters['output'],_invocation_parameters['asvelocity'],_invocation_parameters['axes'],_invocation_parameters['shape'],_invocation_parameters['interpolation'],_invocation_parameters['decimate'],_invocation_parameters['replicate'],_invocation_parameters['overwrite'] )
+2024-07-06 13:33:26	INFO	imregrid::::casa+	  File "/mnt/c/Users/HP/Desktop/Mihir/CASA_local/casa-6.4.3-27/lib/py/lib/python3.8/site-packages/casatasks/imregrid.py", line 331, in __call__
+2024-07-06 13:33:26	INFO	imregrid::::casa+	    task_result = _imregrid_t( _pc.document['imagename'], _pc.document['template'], _pc.document['output'], _pc.document['asvelocity'], _pc.document['axes'], _pc.document['shape'], _pc.document['interpolation'], _pc.document['decimate'], _pc.document['replicate'], _pc.document['overwrite'] )
+2024-07-06 13:33:26	INFO	imregrid::::casa+	  File "/mnt/c/Users/HP/Desktop/Mihir/CASA_local/casa-6.4.3-27/lib/py/lib/python3.8/site-packages/casatasks/private/task_imregrid.py", line 78, in imregrid
+2024-07-06 13:33:26	INFO	imregrid::::casa+	    raise TypeError('Cannot read template image %s' % template)
+2024-07-06 13:33:26	INFO	imregrid::::casa+	TypeError: Cannot read template image l1489_b6_symmetric_chnl_symettric_axis_line_cube_clean_c_baseline.image.pbcor.Regridded.Smoothned.fits
+2024-07-06 13:34:07	INFO	imregrid::::casa	##########################################
+2024-07-06 13:34:07	INFO	imregrid::::casa	##### Begin Task: imregrid           #####
+2024-07-06 13:34:07	INFO	imregrid::::casa	imregrid( imagename='l1489_b6_symmetric_chnl_symettric_axis_line_cube_clean_c_baseline.image.pbcor.Regridded.Smoothned.fits', template='get', output='l1489_b6_sym_along_ctr_600_pix', asvelocity=True, axes=[0, 1], shape=[600, 600, 49, 1], interpolation='linear', decimate=10, replicate=False, overwrite=False )
+2024-07-06 13:34:07	INFO	imregrid::::casa	Task imregrid complete. Start time: 2024-07-06 21:34:07.003105 End time: 2024-07-06 21:34:07.057404
+2024-07-06 13:34:07	INFO	imregrid::::casa	##### End Task: imregrid             #####
+2024-07-06 13:34:07	INFO	imregrid::::casa	##########################################

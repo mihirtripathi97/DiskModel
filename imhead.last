@@ -1,0 +1,6 @@
+imagename = 'l1489_b6_symmetric_chnl_symettric_axis_line_cube_clean_c_baseline.image.pbcor.Regridded.Smoothned.fits'
+mode      = 'summary'
+hdkey     = ''
+hdvalue   = ''
+verbose   = False
+#imhead( imagename='l1489_b6_symmetric_chnl_symettric_axis_line_cube_clean_c_baseline.image.pbcor.Regridded.Smoothned.fits',mode='summary',hdkey='',hdvalue='',verbose=False )

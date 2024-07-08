@@ -3,7 +3,7 @@ import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from astropy import constants
+from astropy import constants, units
 from scipy.interpolate import CubicSpline
 from typing import Union, Literal
 
@@ -27,6 +27,7 @@ class pv_analyze:
 
     G_grav = constants.G.value  # Gravitational constant (MKS)
     M_sun = constants.M_sun.value  # Solar mass (Kg)
+    auTOm = units.au.to('m')            # 1 au (cm)
 
 
     def __init__(self, pv_path=None, is_Tb:bool=True, line_name:str="J_2_1",
@@ -170,8 +171,8 @@ class pv_analyze:
 
             else:
                 # use 2D keplerian velocity profile
-                r_au_rs = (self.G_grav*self.M_star*self.M_sun/(self.v_rot_redshifted* 1.0e3/ np.sin(np.deg2rad(self.inclination)))** 2) / 1.496e11
-                r_au_bs = -1.0 * (self.G_grav* self.M_star* self.M_sun/ (self.v_rot_blueshifted* 1.0e3/ np.sin(np.deg2rad(self.inclination)))** 2) / 1.496e11
+                r_au_rs = (self.G_grav*self.M_star*self.M_sun/(self.v_rot_redshifted* 1.0e3/ np.sin(np.deg2rad(self.inclination)))** 2) / self.auTOm
+                r_au_bs = -1.0 * (self.G_grav* self.M_star* self.M_sun/ (self.v_rot_blueshifted* 1.0e3/ np.sin(np.deg2rad(self.inclination)))** 2) / self.auTOm
         
         # if coordinates of curve is supplied
         elif mode.lower() == 'vals':
